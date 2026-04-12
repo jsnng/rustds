@@ -2,6 +2,7 @@
 name = "derive_proc_macros"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 proc-macro2 = { version = "1.0.106", features = ["span-locations"] }

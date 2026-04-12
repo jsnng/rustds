@@ -2,6 +2,7 @@
 name = "rustds"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 derive_builder = { version = "0.20.2", default-features = false, features = ["alloc"] }
