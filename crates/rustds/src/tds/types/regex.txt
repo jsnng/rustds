@@ -1,0 +1,5 @@
+(fn\s)(\w+)(.*\n\s+todo!\(\)\n\})
+$1$2$3\nfn ib_$2(&self) -> usize { todo!() }\nfn cch_$2(&self) -> usize { todo!() }
+
+^(\s+)([a-z_]\w+\s*:[^:][\w\[;\]<> &']+,)
+$1pub(crate) $2

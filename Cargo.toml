@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "crates/rustds",
+    "crates/derive_proc_macros",
+    "crates/fedauth",
+    "crates/interface",
+    "foundation/collections",
+    "foundation/transport",
+    "foundation/traits",
+    "foundation/plugins",
+]
+resolver = "3"
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1

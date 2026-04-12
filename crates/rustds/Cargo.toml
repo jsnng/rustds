@@ -1,0 +1,55 @@
+[package]
+name = "rustds"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+derive_builder = { version = "0.20.2", default-features = false, features = ["alloc"] }
+derive_proc_macros = { path = "../derive_proc_macros" }
+collections = { path = "../../foundation/collections" }
+tracing = { version =  "0.1.44", default-features = false }
+tracing-subscriber = { version =  "0.3.23", optional = true }
+pastey = "0.2.1"
+transport = { path = "../../foundation/transport", features = ["std", "tls", "tls1.2", "tls1.3", "rustls"], optional = true }
+traits = { path = "../../foundation/traits" }
+chrono = { version = "0.4.44", optional = true }
+fedauth = { path = "../fedauth", optional = true }
+interface = { path = "../interface", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.50.0", features = ["full"] }
+criterion = "0.8.2"
+kani-verifier = { version = "0.67.0" }
+dotenvy = "0.15.7"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ["cfg(kani)"] }
+
+[features]
+default = ["transport", "tds7.4", "rustls", "chrono"]
+std = ["dep:tracing-subscriber"]
+smp = []
+"smp2.2" = ["smp"]
+"tds8.0" = ["tds7.4", "tls"]
+"tds7.4" = ["tds7.3b"]
+"tds7.3b" = ["tds7.3a"]
+"tds7.3a" = ["tds7.3"]
+"tds7.3" = ["tds7.2"]
+"tds7.2" = ["tds7.1"]
+"tds7.1" = ["tds7.0"]
+"tds7.0" = []
+legacy = []
+unsafe = []
+unimplemented = []
+tls = ["transport/tls"]
+"tls1.1" = ["tls", "transport/tls1.1"]
+"tls1.2" = ["tls1.1", "transport/tls1.2"]
+"tls1.3" = ["tls1.2", "transport/tls1.3"]
+rustls = ["tls", "tls1.2", "std", "transport/rustls"]
+nativetls = ["tls"]
+openssl = ["tls"]
+chrono = ["dep:chrono"]
+fedauth = ["dep:fedauth", "fed-auth-adal", "fed-auth-token"]
+api = ["dep:interface"]
+"fed-auth-adal" = []
+"fed-auth-token" = []

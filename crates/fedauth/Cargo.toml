@@ -1,0 +1,11 @@
+[package]
+name = "fedauth"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+plugins = { path = "../../foundation/plugins" }
+
+[features]
+default = []
+std = []

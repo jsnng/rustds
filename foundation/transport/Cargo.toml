@@ -1,0 +1,21 @@
+[package]
+name = "transport"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aws-lc-sys = { version = "0.39", optional = true }
+rustls = { version = "0.23.37", features = ["std"], optional = true }
+rustls-pki-types = { version = "1.14.0", optional = true }
+webpki-roots = { version = "1.0.6", optional = true}
+
+[features]
+default = []
+std = []
+tls = []
+"tls1.1" = ["tls"]
+"tls1.2" = ["tls1.1"]
+"tls1.3" = ["tls1.2"]
+rustls = ["dep:aws-lc-sys", "dep:rustls", "dep:rustls-pki-types", "dep:webpki-roots", "tls1.2", "std"]
+nativetls = ["tls"]
+openssl = ["tls"]
