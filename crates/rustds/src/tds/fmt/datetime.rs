@@ -25,6 +25,7 @@ const DOY_MD: [(u8, u8); 366] = {
     table
 };
 
+/// Adapted from Howard Hinnant's `civil_from_days` algorithm
 /// Returns year/month/day triple in the civil calendar.
 /// # Note:
 /// - uses TDS days (from 1900-01-01)
@@ -35,7 +36,7 @@ const DOY_MD: [(u8, u8); 366] = {
 #[inline(always)]
 fn civil_from_days(z: i32) -> (i32, u8, u8) {
     let mut z = z;
-    z += 693901; // = 719468 − 25567
+    z += 693901; // = 719468 (Hinnant's Unix epoch offset) − 25567 (TDS epoch offset)
     let era = z.div_euclid(146097);
     let doe = z - era * 146097;
     unsafe { core::hint::assert_unchecked((0..=146096).contains(&doe)) }

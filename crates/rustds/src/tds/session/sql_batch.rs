@@ -28,6 +28,7 @@ pub enum LoggedInStateTransition<T, O> {
     },
 }
 
+/// TODO: planned replacement for receive state.
 struct DecodeState {
     results: Vec<QueryResult>,
     errors: Vec<ErrorInfoToken>,
@@ -192,6 +193,7 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
         self.send_and_receive(rpc, on_col_metadata, on_row)
     }
 
+    /// Decodes the TDS response stream, drains() row tokens when col_metadata is received via callbacks.
     #[inline]
     pub fn receive<M, F>(&mut self, mut on_col_metadata: M, mut on_row: F) -> Result<QueryResults, SessionError>
     where

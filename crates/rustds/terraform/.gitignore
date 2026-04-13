@@ -3,4 +3,4 @@
 .terraform
 *.tfstate*
 tfplan
-,DS_Store
+.DS_Store

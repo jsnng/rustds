@@ -1,4 +1,3 @@
-pub mod bulk_load;
 pub mod definitions;
 pub mod header;
 pub mod login;

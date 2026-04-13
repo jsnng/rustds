@@ -6,7 +6,6 @@ pub mod header;
 pub mod login;
 pub mod message;
 pub mod prelogin;
-pub mod prelude;
 pub mod rpc;
 pub mod sql_batch;
 pub mod traits;

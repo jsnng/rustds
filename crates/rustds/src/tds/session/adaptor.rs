@@ -21,7 +21,7 @@ impl Default for TransportAdaptorBuffer {
     }
 }
 /// bridges the TDS framing and TLS.
-/// TLS expects raw `Read/Write` steams however, TLS handshake bytes are wrapped inside the TDS packet headers. So:
+/// TLS expects raw `Read/Write` streams however, TLS handshake bytes are wrapped inside the TDS packet headers. So:
 /// - `Read`: remove the TDS header and provide the TLS the payload.
 /// - `Write`: wrap the TDS header around the encrypted bytes then send.
 #[cfg(feature = "std")]

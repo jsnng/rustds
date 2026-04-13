@@ -38,6 +38,9 @@ pub struct ContextRequired<'a> {
 
 pub trait Drainable {
     const TOKEN: u8;
+    /// N.B. In both implementations ([`Row`] and [`NbcRow`]) of [`Drainable`]
+    /// `usize::MAX` is used as a sentinel instead of `Option<usize>` to avoid the 
+    /// extra byte for the discriminant and the branching that comes with it
     fn steps(buf: &[u8], strides: &[u8]) -> usize;
 }
 
@@ -136,6 +139,8 @@ impl<'a> TokenDecoder<'a, NoContext> {
             state: NoContext,
         }
     }
+
+    /// General-purpose one-token-at-a-time stepper. "catch-all" function for stream token parsing.
     #[inline(always)]
     pub fn advance(self) -> Option<NoContextStep<'a>> {
         let mut buf = self.buf;
@@ -252,7 +257,7 @@ impl<'a> TokenDecoder<'a, ContextRequired<'a>> {
             state: ContextRequired { col_metadata },
         }
     }
-    /// Tight row-draining loop. Returns `(done_span, bytes_consumed)`.
+    /// Drains ROW/NBCROW tokens from the buffer. Returns `(done_span, bytes_consumed)`.
     /// `bytes_consumed` counts from the start of `self.buf` up to and including
     /// the DONE token if one was found, or up to the stall point otherwise.
     ///
@@ -291,6 +296,7 @@ impl<'a> TokenDecoder<'a, ContextRequired<'a>> {
         }
     }
 
+    /// The ContextRequiredStep version of advance().
     #[inline(always)]
     pub fn advance(self) -> Option<ContextRequiredStep<'a>> {
         let mut buf = self.buf;
