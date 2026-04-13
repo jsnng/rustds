@@ -6,8 +6,6 @@
 - Intentionally kept as dependency-free as possible.
 
 > [!WARNING]
-> This crate is in early development and not production-ready. Please review the code carefully before use.
->
 > This crate uses `unsafe` in performance-critical paths (e.g. the streaming decode buffer). These are documented and minimal, but this crate is not `#![forbid(unsafe_code)]`.
 
 # Example

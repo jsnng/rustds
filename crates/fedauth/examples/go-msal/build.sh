@@ -1,1 +1,1 @@
-go build -buildmode=c-shared -o msalfedauth.dylib
+go build -buildmode=c-shared -o go-msal.dylib

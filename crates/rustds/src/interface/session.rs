@@ -1,4 +1,4 @@
-use rustds_api::{Connection, Rows, Row};
+use plugins::{Connection, Rows, Row};
 pub struct ConnectionState {
 
 }

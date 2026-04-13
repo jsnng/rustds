@@ -3,8 +3,7 @@
 - It is currently scoped for multi-protocol support.
 
 > [!WARNING]
-> This project is in early development and not production-ready.
-
+> This project is functional in that the core TDS flows are implemented but it should be considered "early development". However, please consider this project to be not actively maintained; I may continue adding features when I feel like it, but it shouldn't be read as a commitment. I've published it in the hopes that someone finds it useful.
 # Layout
 
 ```
