@@ -1,15 +1,13 @@
 # Tabular Data Stream Protocol
 
-- a zero-alloc, span-based `no_std`-compatible pure-rust implementation of Microsoft's tabular data stream protocol.
+- a zero-alloc (span-based) by default and allocation on demand via [Decode](./decoder/traits.rs) trait, `no_std`-compatible pure-rust implementation of Microsoft's tabular data stream protocol.
 - Transport-agnostic; operates purely at the protocol layer. Implement the `Transport` trait to use it over TCP, TLS, MARS, or any async runtime.
 - Synchronous by default; async runtimes are supported via the `Transport` trait.
-- Intentionally kept as dependency-free as possible.   
-- two-stage "hot" zero-alloc span-based/slow allocated/owned decode pathways via [Decode](./decoder/traits.rs) trait.
+- Intentionally kept as dependency-free as possible.
 
 > [!WARNING]
-> This crate is in early development and not production-ready.
+> This crate is in early development and not production-ready. Please review the code carefully before use.
 >
-> I started this ~~three weeks ago~~ ~~some time ago~~ mid-jan 2026 so it works(tm) barely. Please review the code carefully before use.
 > This crate uses `unsafe` in performance-critical paths (e.g. the streaming decode buffer). These are documented and minimal, but this crate is not `#![forbid(unsafe_code)]`.
 
 # Example
@@ -23,25 +21,65 @@ impl Transport for TcpTransport {
     // ...
 }
 ```
-### 2. Connect & Login
+### 2. Connect
 This implementation manages the session lifecycle via the **typestate pattern** to enforce transitions at compile time.
 ```rust
-let tcp = TcpTransport(TcpStream::connect("server:port")?);
-let session = Session<InitialState, _, _>::new(tcp, _);
+let tcp = TcpStream::connect_timeout(&addr, Duration::from_secs(10))?;
+let session: Session<InitialState, TcpStream, _> = Session::new(tcp, observer);
 // .. do perlogin, login7 and query
 ```
-### 3. Query
+
+### 3. Pre-Login/Login
+
+```rust
+let prelogin = PreLoginPacketBuilder::default()
+  .encryption(PreLoginEncryptionOptions::NotSupported as u8)
+  .build()
+  .unwrap();
+
+let transition = session.transition(prelogin)?;
+match transition {
+  InitialStateTransition::LoginReady(s) => {
+    let login7 = Login7PacketBuilder::default()
+    .user_name("sa".to_string())
+    .password("password".to_string())
+    .server_name("localhost".to_string())
+    .build()?;
+    let session = s.transition(login7)?;
+  }
+  #[cfg(feature = "tls")]
+  InitialStateTransition::TlsSslNegotiation(s) => {
+    // TLS
+  }
+}
+```
+
+### 4. Query
 Here is a `sql_batch` example.
 ```rust
 let sql_batch = SQLBatchBuilder::default()
-    .all_headers(vec![/* DataStreamHeaderType */])
-    .sql_text("SELECT 1".to_string())
+    .all_headers(AllHeaders::new(vec![/* DataStreamHeaderType */]))
+    .sql_text("SELECT * FROM sys.tables".to_string()) 
     .build()?;
+
+session.query(
+  batch,
+  |col_metadata, rows| { /* col_metadata iterator to perform rows decoding */ }
+)?;
 ```
 
-### 4. Results
+or `rpc` example:
+
 ```rust
-// todo!()
+let rpc = SpExecuteSqlBuilder::default()
+    .stmt("SELECT @p1".to_string())
+    .into_rpc_batch(AllHeaders::new(vec![]));
+
+session.send(rpc)?;  
+session.receive(
+  batch,
+  |col_metadata, rows| { /* col_metadata iterator to perform rows decoding */ }
+)?;
 ```
 
 # Features Flags
@@ -109,7 +147,7 @@ cargo build --release --features std
 # Layout
 
 ```
- brontdsaurus/
+ rustds/
  |--- src/
  |    |--- interface/           # impl of unified database layer
  |    |--- smp/                 # "Session Multiplex Protocol" for MARS
@@ -123,8 +161,6 @@ cargo build --release --features std
  |    |    |    |--- tokens/    # streaming token definitions
  |    |    |    |--- sp/        # stored procedures (for rpc.rs)
  |    |--- lib.rs
- |--- examples/
- |--- benches/
 ```
 
 # Status
