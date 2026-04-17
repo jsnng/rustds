@@ -12,7 +12,7 @@
 //!   sensitive data from the TDS driver's memory snapshot.
 //! - The trust boundary is at the plugin — it is already handling credentials
 //!   and communicating with the identity provider. Therefore, adding isolation 
-//!   beyond fault tolerance provides no additional security guarantee.
+//!   beyond fault tolerance has no additional benefit.
 extern crate alloc;
 
 pub mod handle;
