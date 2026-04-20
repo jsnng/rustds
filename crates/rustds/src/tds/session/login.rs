@@ -100,15 +100,23 @@ impl<T: Transport, O: Observer<Event>> Session<LoginReadyState, T, O> {
                         Some(EnvChangeType::PacketSize) => {
                             has_change_maximum_size = true;
                             let data = x.env_value_data();
-                            // EnvChangeType::PacketSize are ASCII '0' to '9',
-                            // Substract b'0' for the corresponding usize.
-                            let chars = data[0] as usize;
-                            let mut n: usize = 0;
-                            for i in 0..chars {
-                                let lo = data[1 + i * 2];
-                                n = n * 10 + (lo - b'0') as usize;
-                            }
-                            default_maximum_size = if n > 0 { n } else { 4096 };
+                            let chars = data.first().copied().unwrap_or(0) as usize;
+                            let needed = 1 + chars.saturating_mul(2);
+                            default_maximum_size = data.get(1..needed)
+                                .and_then(|s| {
+                                    s.chunks_exact(2)
+                                        .map(|c| c[0])
+                                        .try_fold(0usize, |acc, b| {
+                                            if b.is_ascii_digit() {
+                                                acc.checked_mul(10)
+                                                    .and_then(|v| v.checked_add((b - b'0') as usize))
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                })
+                                .filter(|n| (512..=32_768).contains(n))
+                                .unwrap_or(4096);
                         }
                         _ => {}
                     }

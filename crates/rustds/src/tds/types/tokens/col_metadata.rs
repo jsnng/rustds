@@ -1,6 +1,6 @@
 #![allow(unused)]
 use crate::tds::prelude::*;
-use collections::BufRef;
+use collections::SmallBytes;
 
 #[derive(Debug, Clone, Builder)]
 #[builder(no_std, setter(strip_option))]
@@ -153,7 +153,7 @@ pub enum SensitivityRank {
 #[derive(Debug, Clone)]
 pub struct ColMetaDataSpan<'a> {
     pub(crate) bytes: &'a [u8],
-    pub(crate) strides: BufRef<32>,
+    pub(crate) strides: SmallBytes<32>,
 }
 
 /// Owned version of `ColMetaDataSpan`
@@ -168,19 +168,17 @@ impl<'a> ColMetaDataSpan<'a> {
 
     pub fn new(bytes: &'a [u8]) -> Self {
         let count = r_u16_le(bytes, 0) as usize;
-        let mut strides = BufRef::<32>::with_capacity(count);
-        let mut cursor = 2usize;
-        for _ in 0..count {
-            let offset = cursor + ColMetaDataItemSpan::FIXED_DATA_OFFSET + 2;
-            let item = DTYPE_LUT[bytes[offset] as usize];
-            let col_name_len_offset = offset + 1 + item.cch_type_info as usize;
-            let col_name_chars = bytes[col_name_len_offset] as usize;
-            let length = col_name_len_offset + 1 + col_name_chars * 2 - cursor;
-            strides.push(item.stride);
-            cursor += length;
-        }
+        let mut ib = 2usize;
+        let strides = SmallBytes::<32>::fill_with(count, |_| {
+            let ib_type = ib + ColMetaDataItemSpan::FIXED_DATA_OFFSET + 2;
+            let item = DTYPE_LUT[bytes[ib_type] as usize];
+            let ib_cch_col_name = ib_type + 1 + item.cch_type_info as usize;
+            let cch_col_name = bytes[ib_cch_col_name] as usize;
+            ib = ib_cch_col_name + 1 + cch_col_name * 2;
+            item.stride
+        });
         Self {
-            bytes: &bytes[..cursor],
+            bytes: &bytes[..ib],
             strides,
         }
     }
@@ -208,7 +206,7 @@ impl<'a> ColMetaDataSpan<'a> {
     /// Construct a `ColMetaDataSpan` from pre-parsed strides, skipping the parsing loop.
     /// `bytes` must be the original ColMetaData token bytes; `strides` must have been produced
     /// by a prior call to `ColMetaDataSpan::new()` on the same bytes.
-    pub fn from_parts(bytes: &'a [u8], strides: BufRef<32>) -> Self {
+    pub fn from_parts(bytes: &'a [u8], strides: SmallBytes<32>) -> Self {
         Self { bytes, strides }
     }
 
@@ -235,7 +233,7 @@ impl ColMetaDataOwned {
     pub fn borrow(&self) -> ColMetaDataSpan<'_> {
         ColMetaDataSpan {
             bytes: &self.bytes,
-            strides: BufRef::from_slice(&self.strides),
+            strides: SmallBytes::from_slice(&self.strides),
         }
     }
 }

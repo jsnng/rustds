@@ -268,12 +268,12 @@ impl Encoder for SessionRecoveryData {
 
 #[cfg(feature = "tds7.4")]
 impl Encoder for FedAuthKind {
-    fn encode(&self, buf: &mut [u8]) -> usize {
+    fn encode(&self, _buf: &mut [u8]) -> usize {
         match self {
             #[cfg(feature = "fed-auth-adal")]
-            Self::Adal(val) => val.encode(buf),
+            Self::Adal(val) => val.encode(_buf),
             #[cfg(feature = "fed-auth-token")]
-            Self::SecurityToken(val) => val.encode(buf),
+            Self::SecurityToken(val) => val.encode(_buf),
             _ => unreachable!()
         }
     }

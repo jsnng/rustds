@@ -5,43 +5,36 @@ use alloc::vec::Vec;
 use alloc::vec;
 
 #[derive(Debug, Clone)]
-pub enum BufRef<const N: usize> {
+pub enum SmallBytes<const N: usize> {
     Stack { elements: [u8; N], length: usize },
     Heap(Vec<u8>)
 }
 
-impl<const N: usize> Default for BufRef<N> {
+impl<const N: usize> Default for SmallBytes<N> {
     fn default() -> Self {
         Self::Stack { elements: [0u8; N], length: 0 }
     }
 }
 
-impl<const N: usize> BufRef<N> {
-    pub fn with_capacity(capacity: usize) -> Self {
-        if capacity <= N {
-            Self::Stack {
-                elements: [0u8; N],
-                length: 0,
+impl<const N: usize> SmallBytes<N> {
+    /// Build a buffer of `count` bytes by calling `f(i)` for `i` in `0..count`.
+    ///
+    /// This is the only construction path that produces a non-empty, non-zeroed
+    /// buffer from computed values. The buffer is read-only to the caller
+    /// afterward.
+    pub fn fill_with<F: FnMut(usize) -> u8>(count: usize, mut f: F) -> Self {
+        if count <= N {
+            let mut elements = [0u8; N];
+            for (i, el) in elements.iter_mut().enumerate().take(count) {
+                *el = f(i);
             }
+            Self::Stack { elements, length: count }
         } else {
-            Self::Heap(Vec::with_capacity(capacity))
-        }
-    }
-
-    pub fn push(&mut self, value: u8) {
-        match self {
-            Self::Stack { elements, length } => {
-                if *length < N {
-                    elements[*length] = value;
-                    *length += 1;
-                } else {
-                    // Migrate to heap
-                    let mut vec = elements[..*length].to_vec();
-                    vec.push(value);
-                    *self = Self::Heap(vec);
-                }
+            let mut v = Vec::with_capacity(count);
+            for i in 0..count {
+                v.push(f(i));
             }
-            Self::Heap(vec) => vec.push(value),
+            Self::Heap(v)
         }
     }
 
@@ -57,7 +50,7 @@ impl<const N: usize> BufRef<N> {
     }
 }
 
-impl<const N: usize> BufRef<N> {
+impl<const N: usize> SmallBytes<N> {
     pub fn from_slice(slice: &[u8]) -> Self {
         if slice.len() <= N {
             let mut elements = [0u8; N];
@@ -82,7 +75,7 @@ impl<const N: usize> BufRef<N> {
     }
 }
 
-impl<const N: usize> core::ops::Index<usize> for BufRef<N> {
+impl<const N: usize> core::ops::Index<usize> for SmallBytes<N> {
     type Output = u8;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -90,7 +83,7 @@ impl<const N: usize> core::ops::Index<usize> for BufRef<N> {
     }
 }
 
-impl<const N: usize> BufRef<N> {
+impl<const N: usize> SmallBytes<N> {
     pub fn with_len(len: usize) -> Self {
         if len <= N {
             Self::Stack {
@@ -115,18 +108,4 @@ impl<const N: usize> BufRef<N> {
         }
     }
 
-    pub fn set(&mut self, index: usize, value: u8) {
-        match self {
-            Self::Stack { elements, length } => {
-                if index < *length {
-                    elements[index] = value;
-                }
-            }
-            Self::Heap(elements) => {
-                if index < elements.len() {
-                    elements[index] = value;
-                }
-            }
-        }
-    }
 }

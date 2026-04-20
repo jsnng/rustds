@@ -14,7 +14,7 @@
  |    |--- fedauth/               # federated authentication
  |    |--- derive_proc_macros/    # procedural macros for type conversions
  |--- foundation/
- |    |--- collections/           # hybrid stack/heap buffer (BufRef<N>)
+ |    |--- collections/           # hybrid stack/heap buffer (SmallBytes<N>)
  |    |--- traits/                # core Encoder/Decode traits
  |    |--- transport/             # network I/O and TLS abstraction
  |    |--- plugins/               # extensions interface for capabilities requiring external libraries

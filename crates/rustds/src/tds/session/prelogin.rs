@@ -136,8 +136,8 @@ impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
 }
 
 #[cfg(feature = "tds8.0")]
-impl<T: Transport, O: Observer<Event>> Session<InitalState, T, O> {
-    pub fn transition(mut self) -> Result<InitialStateTransition<T, O>, SessionError> {
+impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
+    pub fn transition(self) -> Result<InitialStateTransition<T, O>, SessionError> {
         todo!()
     }
 }
