@@ -103,6 +103,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "bronotdsaurs"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "collections",
+ "criterion",
+ "derive_builder",
+ "derive_proc_macros",
+ "dotenvy",
+ "fedauth",
+ "interface",
+ "kani-verifier",
+ "pastey",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "traits",
+ "transport",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1120,27 +1141,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
  "semver",
-]
-
-[[package]]
-name = "rustds"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "collections",
- "criterion",
- "derive_builder",
- "derive_proc_macros",
- "dotenvy",
- "fedauth",
- "interface",
- "kani-verifier",
- "pastey",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "traits",
- "transport",
 ]
 
 [[package]]

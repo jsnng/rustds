@@ -118,7 +118,7 @@ By default, this crate is `no_std`. To enable `std`, use the feature flag:
 Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-rustds = { git = "https://github.com/jsnng/rustds.git", features = ["tds7.4"] }
+bronotdsaurs = { git = "https://github.com/jsnng/rustds.git", features = ["tds7.4"] }
 ```
 
 # Building
@@ -145,7 +145,7 @@ cargo build --release --features std
 # Layout
 
 ```
- rustds/
+ bronotdsaurs/
  |--- src/
  |    |--- interface/           # impl of unified database layer
  |    |--- smp/                 # "Session Multiplex Protocol" for MARS

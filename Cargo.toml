@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/rustds",
+    "crates/bronotdsaurs",
     "crates/derive_proc_macros",
     "crates/fedauth",
     "crates/interface",

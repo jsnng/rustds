@@ -1,5 +1,5 @@
 [package]
-name = "rustds"
+name = "bronotdsaurs"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
@@ -54,3 +54,19 @@ fedauth = ["dep:fedauth", "fed-auth-adal", "fed-auth-token"]
 api = ["dep:interface"]
 "fed-auth-adal" = []
 "fed-auth-token" = []
+
+[[bench]]
+name = "row_walk"
+harness = false
+
+[[bench]]
+name = "utf16_decode"
+harness = false
+
+[[bench]]
+name = "nbc_row_walk"
+harness = false
+
+[[bench]]
+name = "token_decoder"
+harness = false

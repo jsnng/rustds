@@ -3,7 +3,7 @@
 //! Provides a unified interface for connecting to SQL databases.
 //!
 //! ## Support
-//! - MSSQL (via `rustds`)
+//! - MSSQL (via `bronotdsaurs`)
 
 /// A database connection.
 pub trait Connection: Sized {

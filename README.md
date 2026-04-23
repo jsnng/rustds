@@ -1,4 +1,4 @@
-# rustds
+# bronotdsaurs
 
 - It is currently scoped for multi-protocol support.
 
@@ -9,7 +9,7 @@
 ```
  rustds/
  |--- crates/
- |    |--- rustds/                # TDS protocol implementation
+ |    |--- bronotdsaurs/          # TDS protocol implementation
  |    |--- interface/             # unified database traits (Connection, Rows, Row)
  |    |--- fedauth/               # federated authentication
  |    |--- derive_proc_macros/    # procedural macros for type conversions
