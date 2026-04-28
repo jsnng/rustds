@@ -56,8 +56,8 @@ impl<T: AsyncTransport, O: Observer<Event>> AsyncReceiver<T> for Session<Initial
         });
         Ok(())
     }
-    fn output(&self) -> Self::Output<'_> {
-        PreLoginSpan::new(self.buffer.readable()).map_err(SessionError::from).expect("")
+    fn output(&self) -> Result<Self::Output<'_>, Self::Error> {
+        PreLoginSpan::new(self.buffer.readable()).map_err(SessionError::from)
     }
 }
 

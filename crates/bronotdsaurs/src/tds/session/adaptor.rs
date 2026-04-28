@@ -1,5 +1,6 @@
 use crate::tds::session::prelude::*;
 use crate::tds::prelude::*;
+#[cfg(feature = "std")]
 use std::io::{Read, Write};
 
 /// a simple ring-less read/write buffer.

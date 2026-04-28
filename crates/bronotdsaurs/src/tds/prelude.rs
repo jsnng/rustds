@@ -1,3 +1,4 @@
+pub use alloc::format;
 pub use core::mem::size_of;
 pub use crate::tds::decoder::error::DecodeError;
 pub use crate::tds::decoder::rows::RowSpanIter;
