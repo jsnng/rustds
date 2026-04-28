@@ -4,13 +4,12 @@ use crate::tds::session::prelude::*;
 #[cfg(feature = "std")]
 use tracing::debug;
 
-impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<InitialState, T, O> {
+impl<T: AsyncTransport, O: Observer<Event>> AsyncReceiver<T> for Session<InitialState, T, O> {
     type Error = SessionError;
     type Output<'a>
-        = PreLoginSpan<'a>
-    where
-        Self: 'a;
-    fn receive(&mut self) -> Result<Self::Output<'_>, Self::Error> {
+        =  PreLoginSpan<'a> where Self: 'a;
+
+    async fn receive(&mut self) -> Result<(), Self::Error> {
         self.buffer.reset();
 
         // read the TDS header
@@ -19,6 +18,7 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<InitialState, T, 
             let n = self
                 .stream
                 .read(&mut self.buffer.writeable()[..PreLoginHeader::LENGTH])
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);
@@ -41,6 +41,7 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<InitialState, T, 
             let n = self
                 .stream
                 .read(&mut self.buffer.writeable()[reading..payload_length])
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);
@@ -53,8 +54,10 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<InitialState, T, 
             heading: "PreLogin",
             len: self.buffer.readable().len(),
         });
-
-        PreLoginSpan::new(self.buffer.readable()).map_err(SessionError::from)
+        Ok(())
+    }
+    fn output(&self) -> Self::Output<'_> {
+        PreLoginSpan::new(self.buffer.readable()).map_err(SessionError::from).expect("")
     }
 }
 
@@ -68,8 +71,8 @@ pub enum InitialStateTransition<T, O> {
 }
 
 #[cfg(not(feature = "tds8.0"))]
-impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
-    pub fn transition(
+impl<T: AsyncTransport, O: Observer<Event>> Session<InitialState, T, O> {
+    pub async fn transition(
         mut self,
         prelogin: PreLoginPacket,
     ) -> Result<InitialStateTransition<T, O>, SessionError> {
@@ -79,10 +82,10 @@ impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
         self.stream
             .set_write_timeout(self.timers.connection)
             .map_err(|_| SessionError::transport_write_error())?;
-        self.send(prelogin)?;
+        self.send(prelogin).await?;
         self.notify(Event::PreLoginSent);
 
-        self.receive()?;
+        self.receive().await?;
 
         let bytes = PreLoginSpan::populate(self.buffer.readable())?
             .encryption()
@@ -136,7 +139,7 @@ impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
 }
 
 #[cfg(feature = "tds8.0")]
-impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
+impl<T: AsyncTransport, O: Observer<Event>> Session<InitialState, T, O> {
     pub fn transition(self) -> Result<InitialStateTransition<T, O>, SessionError> {
         todo!()
     }
@@ -144,7 +147,7 @@ impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
 
 #[cfg(feature = "tls")]
 impl<T: Transport, O: Observer<Event>> Session<TlsSslNegotiationState, T, O> {
-    pub fn transition<P, H, F>(
+    pub async fn transition<P, H, F>(
         self,
         server_name: &str,
         handshaker: H,
