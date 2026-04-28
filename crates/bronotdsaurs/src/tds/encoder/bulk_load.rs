@@ -27,6 +27,7 @@ impl<T: Transport> BulkLoadBCP<T, Rows<T>, Vec<u8>> {
     }
 }
 
+#[cfg(feature = "tds7.3b")]
 impl<T: Transport> BulkLoadBCP<T, NbcRows<T>, Option<Vec<u8>>> {
     pub fn new_nbc(mut transport: T, col_metadata: ColMetaDataToken) -> Result<Self, T::Error> {
         transport.write(&col_metadata.as_bytes())?;
@@ -145,6 +146,7 @@ impl<T: Transport> StreamEncoder<T, Vec<u8>> for Rows<T> {
     }
 }
 
+#[cfg(feature = "tds7.3b")]
 struct NbcRows<T: Transport> {
     col_metadata: ColMetaDataToken,
     transport: T,
@@ -152,12 +154,14 @@ struct NbcRows<T: Transport> {
     buf: Vec<u8>,
 }
 
+#[cfg(feature = "tds7.3b")]
 impl<T: Transport> NbcRows<T> {
     fn new(col_metadata: ColMetaDataToken, transport: T) -> Self {
         Self { col_metadata, transport, dirty: false, buf: Vec::new() }
     }
 }
 
+#[cfg(feature = "tds7.3b")]
 impl<T: Transport> StreamEncoder<T, Option<Vec<u8>>> for NbcRows<T> {
     fn is_dirty(&self) -> bool {
         self.dirty
