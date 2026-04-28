@@ -179,16 +179,16 @@ impl<S, T, O: Observer<Event>> Session<S, T, O> {
     }
 }
 
-impl<S, T, O, M> Sender<M, T> for Session<S, T, O>
+impl<S, T, O, M> AsyncSender<M, T> for Session<S, T, O>
 where
-    T: Transport,
+    T: AsyncTransport,
     O: Observer<Event>,
     M: MessageEncoder<Error = EncodeError>,
     M::Header: Default,
 {
     type Error = SessionError;
     #[inline]
-    fn send(&mut self, msg: M) -> Result<(), Self::Error> {
+    async fn send(&mut self, msg: M) -> Result<(), Self::Error> {
         self.buffer.reset();
         let len = msg.oneshot(&mut self.buffer, &mut M::Header::default())?;
         self.buffer.tail(len)?;
@@ -203,6 +203,7 @@ where
             let n = self
                 .stream
                 .write(&self.buffer.readable()[offset..len])
+                .await
                 .map_err(|_| SessionError::transport_write_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);

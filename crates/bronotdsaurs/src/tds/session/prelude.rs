@@ -28,6 +28,9 @@ pub use transport::{
     Receiver,
     Sender,
     Transport,
+    AsyncReceiver,
+    AsyncTransport,
+    AsyncSender,
 };
 #[cfg(feature = "tls")]
 pub use transport::tls::TlsHandshaker;
