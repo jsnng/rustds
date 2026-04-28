@@ -70,6 +70,8 @@ pub enum InitialStateTransition<T, O> {
     TlsNegotiation(Session<TlsNegotiationState, T, O>),
 }
 
+/// TODO: *vomit*
+/// dual AsyncTransport + Transport bound is the cost of TLS + transport agnostic design.
 #[cfg(not(feature = "tds8.0"))]
 impl<T: AsyncTransport + Transport, O: Observer<Event>> Session<InitialState, T, O> {
     pub async fn transition(
