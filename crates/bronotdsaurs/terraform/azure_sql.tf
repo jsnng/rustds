@@ -47,7 +47,7 @@ resource "azurerm_mssql_server" "main" {
   resource_group_name          = azurerm_resource_group.main.name
   location                     = azurerm_resource_group.main.location
   version                      = "12.0"
-  administrator_login          = "gemagroup"
+  administrator_login          = ""
   administrator_login_password = var.password
   azuread_administrator {
     login_username = var.azuread_login

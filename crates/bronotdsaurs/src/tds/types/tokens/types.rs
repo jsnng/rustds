@@ -108,12 +108,19 @@ impl DataTokenType {
 
 impl<'a> BVarBytesSpan<'a> {
     #[inline(always)]
-    // Post:
-    #[cfg_attr(kani, kani::ensures(|_| true))]
+    // Post: Some(y) iff buf.len() == buf[0] + 1 AND &y.bytes == buf
+    #[cfg_attr(kani, kani::ensures(|x: &Option<Self>|
+        x.is_some() == (buf.len() == 1 + buf.first().copied().unwrap_or(0) as usize)
+        && x.as_ref().map_or(true, |z| core::ptr::eq(z.bytes, buf))
+    ))]
     pub fn new(buf: &'a [u8]) -> Option<Self> {
         if buf.is_empty() {
             return None;
         }
+        if (buf[0] as usize) != buf.len() - 1 {
+            return None;
+        }
+
         Some(Self { bytes: buf })
     }
     #[inline(always)]
@@ -129,6 +136,16 @@ impl<'a> BVarBytesSpan<'a> {
     }
 }
 
+#[cfg(kani)]
+#[kani::proof]
+fn proof_varbytes_span_is_valid() {
+    let bytes: [u8; 128] = kani::any();                                                                           
+    let slice = kani::slice::any_slice_of_array(&bytes);                                                         
+    if let Some(span) = BVarBytesSpan::new(slice) {
+        assert_eq!(span.to_vec().len(), slice.len());
+    }
+}
+
 impl PartialEq<str> for NVarCharSpan<'_> {
     fn eq(&self, other: &str) -> bool {
         let iter = self.bytes.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]]));
@@ -138,6 +155,10 @@ impl PartialEq<str> for NVarCharSpan<'_> {
 
 impl<'a> NVarCharSpan<'a> {
     #[inline(always)]
+    // Pre: buf.len() % 2 == 0
+     #[cfg_attr(kani, kani::requires(buf.len() % 2 == 0))]
+    // Post: ptr::eq(y.bytes, buf) 
+    #[cfg_attr(kani, kani::ensures(|x: &Self| core::ptr::eq(x.bytes, buf)))]
     pub fn new(buf: &'a [u8]) -> Self {
         Self { bytes: buf }
     }
@@ -156,4 +177,11 @@ impl<'a> core::fmt::Display for NVarCharSpan<'a> {
         }
         Ok(())
     }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn proof_nvarchar_span_is_valid() {
+    let bytes: [u8; 4] = kani::any();
+    let _ = NVarCharSpan::new(&bytes);
 }

@@ -92,8 +92,10 @@ pub struct EnvChangeToken {
 impl<'a> EnvChangeSpan<'a> {
     pub const FIXED_SPAN_SIZE: usize = 4;
 
-    // Post:
-    #[cfg_attr(kani, kani::ensures(|_| true))]
+    // Post: Ok(s) ==> bytes.len() == s.length() + 3
+    #[cfg_attr(kani, kani::ensures(|x: &Result<Self, DecodeError>|
+        if let Ok(s) = x { s.length() as usize + 3 == bytes.len() } else { true }
+    ))]
     pub fn new(bytes: &'a [u8]) -> Result<Self, DecodeError> {
         if bytes.len() < Self::FIXED_SPAN_SIZE {
             return Err(DecodeError::invalid_length(format!(
@@ -116,8 +118,13 @@ impl<'a> EnvChangeSpan<'a> {
 }
 
 impl<'a> EnvChangeSpan<'a> {
-    // Post:
-    #[cfg_attr(kani, kani::ensures(|_| true))]
+    // // Post:
+    // #[cfg_attr(kani, kani::ensures(|x: &Option<EnvChangeType>|
+    //     match x {
+    //         Some(ty) => *ty as u8 == self.bytes[3],
+    //         None => !matches(self.bytes[3], 0x01..=0x0d | 0x0f..0x15),
+    //     }
+    // ))]
     pub fn ty(&self) -> Option<EnvChangeType> {
         EnvChangeType::from_u8(self.bytes[3])
     }

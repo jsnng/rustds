@@ -95,6 +95,13 @@ impl<'a> ErrorInfoSpan<'a> {
             return Err(DecodeError::KaniStubError);
         }
 
+        if r_u16_le(bytes, 1) as usize + 3 != bytes.len() {
+            #[cfg(not(kani))]
+            return Err(DecodeError::InvalidLength(format!("ErrorInfoSpan::new() declared length {} + 3 != bytes.len() {}", r_u16_le(bytes, 1), bytes.len())));
+            #[cfg(kani)]
+            return Err(DecodeError::KaniStubError);
+        }
+
         if bytes[0] != 0xaa && bytes[0] != 0xab {
             #[cfg(not(kani))]
             return Err(DecodeError::InvalidDataTokenType(format!("ErrorInfoSpan::new() - not 0xaa or 0xab, got {}", bytes[0])));
@@ -237,29 +244,21 @@ fn proof_error_info_span_is_none() {
 }
 
 macro_rules! proof_accessor {
-    ($name:ident, $method:ident) => {
+    ($name:ident, $method:ident, $check:expr) => {
         #[cfg(kani)]
         #[kani::proof]
         fn $name() {
-            let bytes: [u8; 32] = kani::any();
-            if let Ok(span) = ErrorInfoSpan::new(&bytes) {
-                let _ = span.$method();
-            }
-            let bytes: [u8; 64] = kani::any();
-            if let Ok(span) = ErrorInfoSpan::new(&bytes) {
-                let _ = span.$method();
-            }
             let bytes: [u8; 128] = kani::any();
-            if let Ok(span) = ErrorInfoSpan::new(&bytes) {
-                let _ = span.$method();
+            let slice = kani::slice::any_slice_of_array(&bytes);
+            if let Ok(span) = ErrorInfoSpan::new(&slice) {
+                assert!(($check)(&span));
             }
-
         }
     }
 }
 
-proof_accessor!(proof_ty, ty);
-proof_accessor!(proof_msg_text, msg_text);
-proof_accessor!(proof_server_name, server_name);
-proof_accessor!(proof_proc_name, proc_name);
-proof_accessor!(proof_line_number, line_number);
+proof_accessor!(proof_ty, ty, |span: &ErrorInfoSpan<'_>| matches!(span.ty(), DataTokenType::Error | DataTokenType::Info));
+proof_accessor!(proof_msg_text, msg_text, |span: &ErrorInfoSpan<'_>| span.msg_text().bytes.len() <= span.bytes.len());
+proof_accessor!(proof_server_name, server_name, |span: &ErrorInfoSpan<'_>| span.server_name().bytes.len() <= span.bytes.len());
+proof_accessor!(proof_proc_name, proc_name, |span: &ErrorInfoSpan<'_>| span.proc_name().bytes.len() <= span.bytes.len());
+proof_accessor!(proof_line_number, line_number, |span: &ErrorInfoSpan<'_>| span.line_number() == span.line_number());

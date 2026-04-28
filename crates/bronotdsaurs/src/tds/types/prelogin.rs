@@ -393,7 +393,7 @@ fn proof_terminator_is_true() {
 #[cfg(kani)]
 #[kani::proof]
 fn proof_out_of_bounds_no_panic() {
-    let bytes: [u8; { PreLoginHeader::LENGTH - 1 }] = kani::any();
+    let bytes: [u8; PreLoginHeader::LENGTH - 1] = kani::any();
     let span = PreLoginSpan::new(&bytes);
     assert!(span.is_err());
 }

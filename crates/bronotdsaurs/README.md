@@ -1,6 +1,6 @@
 # Tabular Data Stream Protocol
 
-- a zero-alloc (span-based) by default and allocation on demand via [Decode](./decoder/traits.rs) trait, `no_std`-compatible pure-rust implementation of Microsoft's tabular data stream protocol.
+- a zero-alloc (span-based) by default and allocation on demand via [Decode](./decoder/traits.rs) trait, `no_std + alloc`-compatible pure-rust implementation of Microsoft's tabular data stream protocol.
 - Transport-agnostic; operates purely at the protocol layer. Implement the `Transport` trait to use it over TCP, TLS, MARS, or any async runtime.
 - Synchronous by default; async runtimes are supported via the `Transport` trait.
 - Intentionally kept as dependency-free as possible.
@@ -160,67 +160,3 @@ cargo build --release --features std
  |    |    |    |--- sp/        # stored procedures (for rpc.rs)
  |    |--- lib.rs
 ```
-
-# Status
-
-### Protocol
-| Feature | Status |
-| --- | --- |
-| Pre-Login / Login7 | Done |
-| SQL Batch | Done |
-| RPC / Stored Procs | Done |
-| Streaming Receive (zero-alloc) | Done |
-| Bulk Copy (BCP, NBC rows) | Done |
-| TLS/SSL Negotiation | Done |
-| Environment Change Tracking | Done |
-| PLP (Partially Length-Prefixed) | Done |
-| Return Status / Return Value | Done |
-| Formatters (DateTime, Money, GUID, Decimal) | Done |
-| FeatureExtAck (TDS 7.4) | Done |
-
-### Token Decoding
-| Token | Status |
-| --- | --- |
-| ColMetaData, Row, NbcRow (7.3b) | Done |
-| Done, DoneProc, DoneInProc | Done |
-| EnvChange, Error, Info, LoginAck | Done |
-| ReturnStatus, ReturnValue | Done |
-| Order, TabName, ColInfo | Done |
-| FeatureExtAck (7.4) | Done |
-| AltMetaData, AltRow | Stub (`todo!()`) |
-| DataClassification (7.4) | Stub (`todo!()`) |
-| SessionStatus (7.4) | Stub (`todo!()`) |
-| FedAuthInfo, SSPI | Stub |
-
-### Data Type Decoding
-| Type | Status |
-| --- | --- |
-| Fixed-length (Int1-8, Bit, Flt4/8, Money, DateTime) | Done |
-| Variable BYTELEN (Guid, IntN, BitN, DecimalN, FltN, MoneyN, DateTimN) | Done |
-| Variable USHORTLEN (BigVarChar, NVarChar, BigBinary, NChar) | Done |
-| Variable LONGLEN (Image, Text, NText) | Done |
-| DateN, TimeN, DateTime2N, DateTimeOffsetN (7.3) | Walk only (no value decoder) |
-| SsVariant (7.2) | Walk only (no value decoder) |
-| JSON, XML, Vector, UDT | Not in DTYPE_LUT |
-
-### Authentication
-| Feature | Status |
-| --- | --- |
-| SQL Server Auth | Done |
-| Federated Auth | Untested (plugin trait exists, no plugin impl) |
-| SSPI / Kerberos | Stub (type definitions only) |
-
-### Incomplete / Missing
-| Feature | Status |
-| --- | --- |
-| TDS 7.4 Pre-Login Extensions | Partial (11/12 feature options encoded, 1 `todo!()`) |
-| TDS 8.0 | Stub (feature guards only, `todo!()` in session transition) |
-| JSON / XML Decode | Missing (type defined, no decoder) |
-| MARS (SMP) | Partial (header encode only, no session management) |
-| Legacy Data Types | Feature-gated, not enabled by default |
-| Always Encrypted | Partial (type + encoder, no decryption) |
-| Attention Signals | Partial (encoder only, no response handling) |
-| TVP (Table-Valued Parameters) | Partial (type name/metadata done, row iteration incomplete) |
-| Tests / Kani Proofs | Partial (~12 kani proofs, ~38 unit tests, many stubs) |
-| Documentation | Incomplete |
-

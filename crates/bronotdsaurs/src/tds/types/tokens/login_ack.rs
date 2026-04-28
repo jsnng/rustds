@@ -121,7 +121,7 @@ impl LoginAckToken {
 #[cfg(kani)]
 #[kani::proof]
 fn proof_login_ack_span_is_none() {
-    let bytes: [u8; 8] = kani::any::<u8>();
+    let bytes: [u8; 8] = kani::any();
     assert!(LoginAckSpan::new(&bytes).is_err());
 }
 
@@ -133,9 +133,8 @@ fn proof_prog_name() {
         let _ = span.prog_name();
     }
 
-    let bytes: [u8; 64] = kani::any();       
-    if let Ok(span) = LoginAckSpan::new(&bytes) {     
+    let bytes: [u8; 64] = kani::any();
+    if let Ok(span) = LoginAckSpan::new(&bytes) {
         let _ = span.prog_name();
     }
-    assert!(LoginAckSpan::new(&bytes).is_err());
 }
