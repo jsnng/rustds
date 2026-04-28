@@ -1,4 +1,5 @@
 use crate::tds::prelude::*;
+use alloc::borrow::ToOwned;
 
 /// Implementation of [`Decode`] for [`AltMetaDataSpan`].
 impl<'a> Decode<'a> for AltMetaDataSpan<'a> {

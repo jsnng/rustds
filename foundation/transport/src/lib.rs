@@ -26,7 +26,6 @@ pub trait Transport {
 /// wrap a runtime-specific stream (tokio, smol, embassy, etc.) and expose
 /// `read`/`write` as `async fn`. Timeout setters remain synchronous as they
 /// only configure subsequent I/O and do not perform any.
-#[cfg(feature = "std")]
 #[allow(async_fn_in_trait)]
 pub trait AsyncTransport {
     type Error;
@@ -53,7 +52,6 @@ pub trait Receiver<T: Transport> {
 }
 
 /// `AsyncSender` is the async counterpart to [`Sender`].
-#[cfg(feature = "std")]
 #[allow(async_fn_in_trait)]
 pub trait AsyncSender<M, T: AsyncTransport> {
     type Error;
@@ -63,8 +61,9 @@ pub trait AsyncSender<M, T: AsyncTransport> {
 /// `AsyncReceiver` is the async counterpart to [`Receiver`]. Receive is split
 /// into two phases — `receive()` populates the internal buffer, `output()`
 /// returns the borrow — because returning a borrow from an `async fn` requires
-/// lending-future support that is not yet stable in 2026.
-#[cfg(feature = "std")]
+/// lending-future support that is not yet stable in 2026. `output()` is
+/// fallible because parsing the buffered bytes can fail even after a
+/// successful read.
 #[allow(async_fn_in_trait)]
 pub trait AsyncReceiver<T: AsyncTransport> {
     type Error;
@@ -72,5 +71,5 @@ pub trait AsyncReceiver<T: AsyncTransport> {
     where
         Self: 'a;
     async fn receive(&mut self) -> Result<(), Self::Error>;
-    fn output(&self) -> Self::Output<'_>;
+    fn output(&self) -> Result<Self::Output<'_>, Self::Error>;
 }

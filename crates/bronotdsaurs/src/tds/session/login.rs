@@ -63,8 +63,8 @@ impl<T: AsyncTransport, O: Observer<Event>> AsyncReceiver<T> for Session<LoginRe
         Ok(())
     }
 
-    fn output(&self) -> Self::Output<'_> {
-        &self.buffer.readable()[Login7Header::LENGTH..]  
+    fn output(&self) -> Result<Self::Output<'_>, Self::Error> {
+        Ok(&self.buffer.readable()[Login7Header::LENGTH..])
     }
 }
 
