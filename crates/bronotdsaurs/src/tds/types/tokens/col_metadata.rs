@@ -122,6 +122,7 @@ pub struct CryptoMetaData {
     norm_version: u8,
 }
 
+#[cfg(feature = "tds7.4")]
 impl CryptoMetaData {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::with_capacity(7);
@@ -425,6 +426,7 @@ pub struct ColMetaDataItem {
 
 impl ColMetaDataItemBuilder {
     fn validate(&self) -> Result<(), String> {
+        #[cfg(feature = "tds7.4")] 
         if self.flags.is_some_and(|x| x.f_encrypted) && self.crypto_meta_data.is_none() {
             return Err("f_encrypted is set but self.crypto_meta_data is None".to_string())
         }

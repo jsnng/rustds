@@ -548,6 +548,7 @@ mod tests {
         assert_eq!(type_flag.0, 0x01); // 1
     }
     
+    #[cfg(feature = "tds7.2")]
     #[test]
     fn test_type_flag_f_oledb() {
         let type_flag = TypeFlag::new(0u8, TypeFlag::F_OLEDB_ON,  false);
@@ -564,18 +565,22 @@ mod tests {
         assert_eq!(type_flag.0, 0u8);
     }
     //option_flag3
+    
+    #[cfg(feature = "tds7.2")]
     #[test]
      fn test_option_flag3_f_change_password() {
         assert_eq!(OptionFlag3::new(false, false, false, false, false).0, 0u8); // 0
         assert_eq!(OptionFlag3::new(true, false, false, false, false).0, 0x01); // 1
     }
 
+    #[cfg(feature = "tds7.2")]
     #[test]
     fn test_option_flag3_f_user_instance() {
         assert_eq!(OptionFlag3::new(false, false, false, false, false).0, 0u8); // 0
         assert_eq!(OptionFlag3::new(false, true, false, false, false).0, 0x02); // 2
     }
 
+    #[cfg(feature = "tds7.2")]
     #[test]
     fn test_option_flag3_f_send_yukon_binary_xml() {
         assert_eq!(OptionFlag3::new(false, false, false, false, false).0, 0u8); // 0
@@ -583,12 +588,14 @@ mod tests {
 
     }
 
+    #[cfg(feature = "tds7.2")]
     #[test]
     fn test_option_flag3_f_unknown_collation_handling() {
         assert_eq!(OptionFlag3::new(false, false, false, false, false).0, 0u8); // 0
         assert_eq!(OptionFlag3::new(false, false, false, true, false).0, 0x08); // 8
     }
 
+    #[cfg(feature = "tds7.2")]
     #[test]
     fn test_option_flag3_f_extension() {
         assert_eq!(OptionFlag3::new(false, false, false, false, false).0, 0u8); // 0
