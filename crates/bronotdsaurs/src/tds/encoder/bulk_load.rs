@@ -1,24 +1,25 @@
 use crate::tds::prelude::*;
-use transport::Transport;
+use transport::AsyncTransport;
 
 /// BulkLoadBCP/BulkLoadTWT are the only two operations in TDS that utilise a token stream.
-pub trait StreamEncoder<T: Transport, C> {
+#[allow(async_fn_in_trait)]
+pub trait StreamEncoder<T: AsyncTransport, C> {
     /// push a row to be encoded into bytes
     fn push(&mut self, columns: Vec<C>) -> Result<(), EncodeError>;
-    fn flush(&mut self) -> Result<(), T::Error>;
+    async fn flush(&mut self) -> Result<(), T::Error>;
     fn is_dirty(&self) -> bool;
-    fn done(self, done_token: DoneToken) -> Result<(), T::Error>;
+    async fn done(self, done_token: DoneToken) -> Result<(), T::Error>;
 }
 
-pub struct BulkLoadBCP<T: Transport, R, C> {
+pub struct BulkLoadBCP<T: AsyncTransport, R, C> {
     encoder: R,
     _t: core::marker::PhantomData<T>,
     _c: core::marker::PhantomData<C>,
 }
 
-impl<T: Transport> BulkLoadBCP<T, Rows<T>, Vec<u8>> {
-    pub fn new(mut transport: T, col_metadata: ColMetaDataToken) -> Result<Self, T::Error> {
-        transport.write(&col_metadata.as_bytes())?;
+impl<T: AsyncTransport> BulkLoadBCP<T, Rows<T>, Vec<u8>> {
+    pub async fn new(mut transport: T, col_metadata: ColMetaDataToken) -> Result<Self, T::Error> {
+        transport.write(&col_metadata.as_bytes()).await?;
         Ok(Self {
             encoder: Rows::new(col_metadata, transport),
             _t: core::marker::PhantomData,
@@ -28,9 +29,9 @@ impl<T: Transport> BulkLoadBCP<T, Rows<T>, Vec<u8>> {
 }
 
 #[cfg(feature = "tds7.3b")]
-impl<T: Transport> BulkLoadBCP<T, NbcRows<T>, Option<Vec<u8>>> {
-    pub fn new_nbc(mut transport: T, col_metadata: ColMetaDataToken) -> Result<Self, T::Error> {
-        transport.write(&col_metadata.as_bytes())?;
+impl<T: AsyncTransport> BulkLoadBCP<T, NbcRows<T>, Option<Vec<u8>>> {
+    pub async fn new_nbc(mut transport: T, col_metadata: ColMetaDataToken) -> Result<Self, T::Error> {
+        transport.write(&col_metadata.as_bytes()).await?;
         Ok(Self {
             encoder: NbcRows::new(col_metadata, transport),
             _t: core::marker::PhantomData,
@@ -40,37 +41,37 @@ impl<T: Transport> BulkLoadBCP<T, NbcRows<T>, Option<Vec<u8>>> {
 }
 
 
-impl<T: Transport, R: StreamEncoder<T, C>, C> BulkLoadBCP<T, R, C> {
+impl<T: AsyncTransport, R: StreamEncoder<T, C>, C> BulkLoadBCP<T, R, C> {
     pub fn push(&mut self, columns: Vec<C>) -> Result<(), EncodeError> {
         self.encoder.push(columns)
     }
 
-    pub fn flush(&mut self) -> Result<(), T::Error> {
-        self.encoder.flush()
+    pub async fn flush(&mut self) -> Result<(), T::Error> {
+        self.encoder.flush().await
     }
 
     pub fn is_dirty(&self) -> bool {
         self.encoder.is_dirty()
     }
 
-    pub fn done(self, done_token: DoneToken) -> Result<(), T::Error> {
-        self.encoder.done(done_token)
+    pub async fn done(self, done_token: DoneToken) -> Result<(), T::Error> {
+        self.encoder.done(done_token).await
     }
 }
 
-struct BulkLoadTWT<T: Transport> {
+struct BulkLoadTWT<T: AsyncTransport> {
     transport: T,
     dirty: bool,
     buf: Vec<u8>,
 }
 
-impl<T: Transport> BulkLoadTWT<T> {
+impl<T: AsyncTransport> BulkLoadTWT<T> {
     pub fn new(transport: T) -> Self {
         Self { transport, dirty: false, buf: Vec::new() }
     }
 }
 
-impl<T: Transport> StreamEncoder<T, u8> for BulkLoadTWT<T> {
+impl<T: AsyncTransport> StreamEncoder<T, u8> for BulkLoadTWT<T> {
     fn push(&mut self, columns: Vec<u8>) -> Result<(), EncodeError> {
         if self.dirty {
             return Err(EncodeError::PreviousRowNotFlushed);
@@ -81,8 +82,8 @@ impl<T: Transport> StreamEncoder<T, u8> for BulkLoadTWT<T> {
         Ok(())
     }
 
-    fn flush(&mut self) -> Result<(), <T as Transport>::Error> {
-        self.transport.write(&self.buf)?;
+    async fn flush(&mut self) -> Result<(), T::Error> {
+        self.transport.write(&self.buf).await?;
         self.dirty = false;
         Ok(())
     }
@@ -91,26 +92,26 @@ impl<T: Transport> StreamEncoder<T, u8> for BulkLoadTWT<T> {
         self.dirty
     }
 
-    fn done(mut self, done_token: DoneToken) -> Result<(), <T as Transport>::Error> {
-        self.transport.write(&done_token.as_bytes())?;
+    async fn done(mut self, done_token: DoneToken) -> Result<(), T::Error> {
+        self.transport.write(&done_token.as_bytes()).await?;
         Ok(())
     }
 }
 
-struct Rows<T: Transport> {
+struct Rows<T: AsyncTransport> {
     col_metadata: ColMetaDataToken,
     transport: T,
     dirty: bool,
     buf: Vec<u8>,
 }
 
-impl<T: Transport> Rows<T> {
+impl<T: AsyncTransport> Rows<T> {
     fn new(col_metadata: ColMetaDataToken, transport: T) -> Self {
         Self { col_metadata, transport, dirty: false, buf: Vec::new() }
     }
 }
 
-impl<T: Transport> StreamEncoder<T, Vec<u8>> for Rows<T> {
+impl<T: AsyncTransport> StreamEncoder<T, Vec<u8>> for Rows<T> {
     fn is_dirty(&self) -> bool {
         self.dirty
     }
@@ -134,20 +135,20 @@ impl<T: Transport> StreamEncoder<T, Vec<u8>> for Rows<T> {
         Ok(())
     }
 
-    fn flush(&mut self) -> Result<(), T::Error> {
-        self.transport.write(&self.buf)?;
+    async fn flush(&mut self) -> Result<(), T::Error> {
+        self.transport.write(&self.buf).await?;
         self.dirty = false;
         Ok(())
     }
 
-    fn done(mut self, done_token: DoneToken) -> Result<(), T::Error> {
-        self.transport.write(&done_token.as_bytes())?;
+    async fn done(mut self, done_token: DoneToken) -> Result<(), T::Error> {
+        self.transport.write(&done_token.as_bytes()).await?;
         Ok(())
     }
 }
 
 #[cfg(feature = "tds7.3b")]
-struct NbcRows<T: Transport> {
+struct NbcRows<T: AsyncTransport> {
     col_metadata: ColMetaDataToken,
     transport: T,
     dirty: bool,
@@ -155,14 +156,14 @@ struct NbcRows<T: Transport> {
 }
 
 #[cfg(feature = "tds7.3b")]
-impl<T: Transport> NbcRows<T> {
+impl<T: AsyncTransport> NbcRows<T> {
     fn new(col_metadata: ColMetaDataToken, transport: T) -> Self {
         Self { col_metadata, transport, dirty: false, buf: Vec::new() }
     }
 }
 
 #[cfg(feature = "tds7.3b")]
-impl<T: Transport> StreamEncoder<T, Option<Vec<u8>>> for NbcRows<T> {
+impl<T: AsyncTransport> StreamEncoder<T, Option<Vec<u8>>> for NbcRows<T> {
     fn is_dirty(&self) -> bool {
         self.dirty
     }
@@ -199,14 +200,14 @@ impl<T: Transport> StreamEncoder<T, Option<Vec<u8>>> for NbcRows<T> {
         Ok(())
     }
 
-    fn flush(&mut self) -> Result<(), T::Error> {
-        self.transport.write(&self.buf)?;
+    async fn flush(&mut self) -> Result<(), T::Error> {
+        self.transport.write(&self.buf).await?;
         self.dirty = false;
         Ok(())
     }
 
-    fn done(mut self, done_token: DoneToken) -> Result<(), T::Error> {
-        self.transport.write(&done_token.as_bytes())?;
+    async fn done(mut self, done_token: DoneToken) -> Result<(), T::Error> {
+        self.transport.write(&done_token.as_bytes()).await?;
         Ok(())
     }
 }
