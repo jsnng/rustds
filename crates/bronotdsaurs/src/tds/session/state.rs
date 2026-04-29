@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 #[derive(Debug, Default)]
 pub struct InitialState;
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "tds8.0"), feature = "tls"))]
 #[derive(Debug, Default)]
 pub struct TlsSslNegotiationState;
 #[cfg(feature = "tds8.0")]
