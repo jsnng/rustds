@@ -23,11 +23,11 @@ criterion = "0.8.2"
 kani-verifier = { version = "0.67.0" }
 dotenvy = "0.15.7"
 
-[lints.rust]
-unexpected_cfgs = { level = "allow", check-cfg = ["cfg(kani)"] }
+[lints]
+workspace = true
 
 [features]
-default = ["transport", "tds7.4", "rustls", "chrono"]
+default = ["transport", "tds8.0", "rustls", "chrono"]
 std = ["dep:tracing-subscriber"]
 smp = []
 "smp2.2" = ["smp"]

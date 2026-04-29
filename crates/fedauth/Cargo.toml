@@ -10,3 +10,6 @@ plugins = { path = "../../foundation/plugins" }
 [features]
 default = []
 std = []
+
+[lints]
+workspace = true

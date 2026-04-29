@@ -9,3 +9,6 @@ license = "MIT"
 [features]
 default = []
 std = []
+
+[lints]
+workspace = true

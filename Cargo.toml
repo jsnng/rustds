@@ -15,3 +15,11 @@ resolver = "3"
 panic = "abort"
 lto = true
 codegen-units = 1
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ["cfg(kani)"] }
+
+[workspace.lints.clippy]
+let_underscore_must_use = "warn"
+ok_expect = "warn"
+unwrap_or_default = "warn"

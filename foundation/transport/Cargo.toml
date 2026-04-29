@@ -20,3 +20,6 @@ tls = []
 rustls = ["dep:aws-lc-sys", "dep:rustls", "dep:rustls-pki-types", "dep:webpki-roots", "tls1.2", "std"]
 nativetls = ["tls"]
 openssl = ["tls"]
+
+[lints]
+workspace = true
