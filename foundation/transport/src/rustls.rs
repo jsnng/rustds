@@ -58,7 +58,14 @@ impl TlsHandshaker for RustlsConfig {
     type Connection = ClientConnection;
     type HandshakeError = rustls::Error;
 
-    fn handshake<S: Read + Write>(&self, server_name: &str, stream: &mut S) -> Result<ClientConnection, rustls::Error> {
+    async fn handshake<S: AsyncTransport>(
+        &self,
+        server_name: &str,
+        stream: &mut S,
+    ) -> Result<ClientConnection, rustls::Error>
+    where
+        S::Error: core::fmt::Debug,
+    {
         let name = if let Ok(dns_name) = DnsName::try_from(String::from(server_name)) {
             ServerName::DnsName(dns_name)
         } else if let Ok(ip_addr) = server_name.parse::<IpAddr>() {
@@ -69,12 +76,44 @@ impl TlsHandshaker for RustlsConfig {
 
         let mut connection = ClientConnection::new(Arc::clone(&self.config), name)?;
 
-        connection
-            .complete_io(stream)
-            .map_err(|e| rustls::Error::General(format!("TLS handshake IO error: {}", e)))?;
+        while connection.is_handshaking() {
+            while connection.wants_write() {
+                let mut tls_out = alloc::vec::Vec::new();
+                connection
+                    .write_tls(&mut tls_out)
+                    .map_err(|e| rustls::Error::General(format!("write_tls: {}", e)))?;
+                let mut offset = 0;
+                while offset < tls_out.len() {
+                    let n = stream
+                        .write(&tls_out[offset..])
+                        .await
+                        .map_err(|e| {
+                            rustls::Error::General(format!("transport write: {:?}", e))
+                        })?;
+                    if n == 0 {
+                        return Err(rustls::Error::General("connection closed".into()));
+                    }
+                    offset += n;
+                }
+            }
+            if !connection.is_handshaking() {
+                break;
+            }
 
-        if connection.is_handshaking() {
-            return Err(rustls::Error::General("TLS handshake incomplete".into()));
+            let mut scratch = [0u8; 4096];
+            let n = stream
+                .read(&mut scratch)
+                .await
+                .map_err(|e| rustls::Error::General(format!("transport read: {:?}", e)))?;
+            if n == 0 {
+                return Err(rustls::Error::General(
+                    "connection closed during handshake".into(),
+                ));
+            }
+            connection
+                .read_tls(&mut &scratch[..n])
+                .map_err(|e| rustls::Error::General(format!("read_tls: {}", e)))?;
+            connection.process_new_packets()?;
         }
 
         Ok(connection)
@@ -85,51 +124,24 @@ impl TlsHandshaker for RustlsConfig {
 // RustlsProvider — wraps a transport + an established TLS connection
 // ---------------------------------------------------------------------------
 
-pub struct RustlsProvider<T: Transport> {
+pub struct RustlsProvider<T: AsyncTransport> {
     transport: T,
     connection: ClientConnection,
 }
 
-impl<T: Transport> RustlsProvider<T> {
+impl<T: AsyncTransport> RustlsProvider<T> {
     pub fn from_parts(transport: T, connection: ClientConnection) -> Self {
         Self { transport, connection }
     }
 }
 
-struct StreamAdapter<'a, T: Transport>(&'a mut T);
-
-impl<T: Transport> Read for StreamAdapter<'_, T>
-where
-    T::Error: core::fmt::Debug,
-{
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        self.0
-            .read(buf)
-            .map_err(|e| std::io::Error::other(format!("{:?}", e)))
-    }
-}
-
-impl<T: Transport> Write for StreamAdapter<'_, T>
-where
-    T::Error: core::fmt::Debug,
-{
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0
-            .write(buf)
-            .map_err(|e| std::io::Error::other(format!("{:?}", e)))
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl<T: Transport> Transport for RustlsProvider<T>
+impl<T: AsyncTransport> AsyncTransport for RustlsProvider<T>
 where
     T::Error: core::fmt::Debug,
 {
     type Error = std::io::Error;
 
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    async fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         loop {
             match self.connection.reader().read(buf) {
                 Ok(0) => return Ok(0),
@@ -138,18 +150,43 @@ where
                 _ => {}
             }
 
-            let mut adaptor = StreamAdapter(&mut self.transport);
-            self.connection.read_tls(&mut adaptor)?;
+            let mut scratch = [0u8; 4096];
+            let n = self
+                .transport
+                .read(&mut scratch)
+                .await
+                .map_err(|e| std::io::Error::other(format!("{:?}", e)))?;
+            if n == 0 {
+                return Ok(0);
+            }
+            self.connection.read_tls(&mut &scratch[..n])?;
             self.connection.process_new_packets().map_err(|e| {
                 std::io::Error::new(std::io::ErrorKind::InvalidData, format!("{}", e))
             })?;
         }
     }
 
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+    async fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
         let written = self.connection.writer().write(buf)?;
-        let mut adaptor = StreamAdapter(&mut self.transport);
-        self.connection.write_tls(&mut adaptor)?;
+        while self.connection.wants_write() {
+            let mut tls_out = alloc::vec::Vec::new();
+            self.connection.write_tls(&mut tls_out)?;
+            let mut offset = 0;
+            while offset < tls_out.len() {
+                let n = self
+                    .transport
+                    .write(&tls_out[offset..])
+                    .await
+                    .map_err(|e| std::io::Error::other(format!("{:?}", e)))?;
+                if n == 0 {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::WriteZero,
+                        "transport closed",
+                    ));
+                }
+                offset += n;
+            }
+        }
         Ok(written)
     }
 

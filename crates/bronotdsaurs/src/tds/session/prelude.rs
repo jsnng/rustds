@@ -25,9 +25,6 @@ pub use crate::tds::session::traits::{
     Streamer,
 };
 pub use transport::{
-    Receiver,
-    Sender,
-    Transport,
     AsyncReceiver,
     AsyncTransport,
     AsyncSender,

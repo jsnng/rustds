@@ -1,3 +1,3 @@
-pub use crate::Transport;
+pub use crate::AsyncTransport;
 #[cfg(feature = "tls")]
 pub use crate::tls::TlsHandshaker;
