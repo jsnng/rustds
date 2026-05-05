@@ -1,5 +1,9 @@
+//! InitialState/PreLoginState State Transitions
 use crate::tds::prelude::*;
 use crate::tds::session::prelude::*;
+
+#[cfg(feature = "std")]
+use tracing::debug;
 
 /// Marker trait [`PreLoginPhase`] due to different TLS negotiation requirements.
 /// TDS 7.x: PreLogin -> TLS negotiation -> Login
@@ -8,7 +12,7 @@ use crate::tds::session::prelude::*;
 /// Implemented by [`InitialState`] for 7.x and [`PreLoginReadyState`] for 8.0
 pub trait PreLoginPhase {}
 #[cfg(not(feature = "tds8.0"))]
-impl PreLoginPhase for InitialState {}
+impl PreLoginPhase for InitivalState {}
 #[cfg(feature = "tds8.0")]
 impl PreLoginPhase for PreLoginReadyState {}
 

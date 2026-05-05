@@ -27,6 +27,7 @@ impl SMPHeader {
 }
 
 #[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ControlFlagType {
     Syn = 0x01,
     Ack = 0x02,

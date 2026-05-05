@@ -7,7 +7,9 @@ pub mod sql_batch;
 pub mod state;
 pub mod timer;
 pub mod traits;
-#[cfg(feature = "tls")]
+/// Special transport adaptor is required for TDS 7.x only as
+/// PreLogin packets wraps the TLS handshake bytes.
+#[cfg(all(not(feature = "tds8.0"), feature = "tls"))]
 pub mod adaptor;
 #[cfg(feature = "rustls")]
 pub use transport::rustls;

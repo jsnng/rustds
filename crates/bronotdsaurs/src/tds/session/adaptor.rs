@@ -1,3 +1,4 @@
+//! TransportAdaptor - TDS 7.x only
 use crate::tds::session::prelude::*;
 use crate::tds::prelude::*;
 

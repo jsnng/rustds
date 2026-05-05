@@ -15,7 +15,7 @@ pub use crate::tds::session::state::*;
 
 // Internal transport
 pub(in crate::tds::session) use crate::tds::session::timer::Timers;
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "tds8.0"), feature = "tls"))]
 pub use crate::tds::session::adaptor::{
     TransportAdaptor,
     TransportAdaptorBuffer,

@@ -1,3 +1,4 @@
+//! SQL Batch State Transitions
 use core::mem::MaybeUninit;
 
 use crate::tds::decoder::stream::{NoContextStep, TokenDecoder};
@@ -140,6 +141,7 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
     async fn send_and_receive<Msg, M, F>(
         mut self,
         msg: Msg,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -150,7 +152,7 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
         self.send(msg).await?;
-        let results = self.receive(on_col_metadata, on_row).await?;
+        let results = self.receive(attention, on_col_metadata, on_row).await?;
         let errors: Vec<ErrorInfoToken> = results.results.iter()
             .flat_map(|r| r.errors.iter().cloned())
             .collect();
@@ -171,6 +173,7 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
     pub async fn query<M, F>(
         self,
         sql_batch: SQLBatch,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -178,13 +181,14 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
-        self.send_and_receive(sql_batch, on_col_metadata, on_row).await
+        self.send_and_receive(sql_batch, attention, on_col_metadata, on_row).await
     }
 
     #[inline]
     pub async fn execute<M, F>(
         self,
         rpc: RPCReqBatch,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -192,12 +196,12 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
-        self.send_and_receive(rpc, on_col_metadata, on_row).await
+        self.send_and_receive(rpc, attention, on_col_metadata, on_row).await
     }
 
     /// Decodes the TDS response stream, drains() row tokens when col_metadata is received via callbacks.
     #[inline]
-    pub async fn receive<M, F>(&mut self, mut on_col_metadata: M, mut on_row: F) -> Result<QueryResults, SessionError>
+    pub async fn receive<M, F>(&mut self, attention: Attention, mut on_col_metadata: M, mut on_row: F) -> Result<QueryResults, SessionError>
     where
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),

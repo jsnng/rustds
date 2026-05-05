@@ -12,6 +12,8 @@ pub struct TlsNegotiationState;
 #[derive(Debug, Default)]
 pub struct PreLoginReadyState;
 #[derive(Debug, Default)]
+pub struct MARS;
+#[derive(Debug, Default)]
 pub struct LoginReadyState;
 #[derive(Debug, Default)]
 pub struct SpnegoNegotiationState;

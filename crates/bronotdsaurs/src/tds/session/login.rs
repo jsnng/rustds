@@ -1,3 +1,4 @@
+//! Login State Transitions
 use transport::AsyncTransport;
 use crate::tds::decoder::stream::{NoContextStep, TokenDecoder};
 use crate::tds::session::prelude::*;
