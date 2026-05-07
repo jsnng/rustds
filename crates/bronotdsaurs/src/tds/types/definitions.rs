@@ -76,7 +76,7 @@ impl TryFrom<u8> for DataType {
             3 => Ok(Self::Variable(
                 VariableLengthDataType::from_u8(val).unwrap(),
             )),
-            _ => Err(DecodeError::invalid_field(format!(
+            _ => Err(DecodeError::InvalidField(format!(
                 "DataType::try_from() unknown value: 0x{:02x}",
                 val
             ))),

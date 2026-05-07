@@ -78,7 +78,7 @@ impl<'a> DoneSpan<'a> {
     #[cfg_attr(kani, kani::ensures(|_| true))]
     pub fn new(bytes: &'a [u8]) -> Result<Self, DecodeError> {
         if bytes.len() < Self::FIXED_SPAN_SIZE {
-            return Err(DecodeError::invalid_length(format!(
+            return Err(DecodeError::InvalidLength(format!(
                 "DoneSpan::new() bytes.len()={} < FIXED_SPAN_SIZE={}",
                 bytes.len(),
                 Self::FIXED_SPAN_SIZE

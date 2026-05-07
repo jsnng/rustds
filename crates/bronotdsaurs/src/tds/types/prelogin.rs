@@ -118,14 +118,14 @@ impl<'a> PreLoginSpan<'a> {
     pub fn new(bytes: &'a [u8]) -> Result<Self, DecodeError> {
         if bytes.len() < PreLoginHeader::LENGTH {
             #[cfg(not(kani))]
-            return Err(DecodeError::invalid_length(format!("PreLoginSpan::new() bytes.len()={} < PreLoginHeader::LENGTH={}", bytes.len(), PreLoginHeader::LENGTH)));
+            return Err(DecodeError::InvalidLength(format!("PreLoginSpan::new() bytes.len()={} < PreLoginHeader::LENGTH={}", bytes.len(), PreLoginHeader::LENGTH)));
             #[cfg(kani)]
             return Err(DecodeError::KaniStubError)
         }
         if (bytes[0] != SERVER_PACKET_TYPE) &&
             (bytes[0] != ClientMessageType::PreLogin) {
             #[cfg(not(kani))]
-            return Err(DecodeError::invalid_packet_type(format!("PreLoginSpan::new() unexpected packet type: 0x{:02x}", bytes[0])));
+            return Err(DecodeError::InvalidPacketType(format!("PreLoginSpan::new() unexpected packet type: 0x{:02x}", bytes[0])));
             #[cfg(kani)]
             return Err(DecodeError::KaniStubError)
         }
