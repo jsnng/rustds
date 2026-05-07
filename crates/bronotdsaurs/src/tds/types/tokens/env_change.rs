@@ -98,7 +98,7 @@ impl<'a> EnvChangeSpan<'a> {
     ))]
     pub fn new(bytes: &'a [u8]) -> Result<Self, DecodeError> {
         if bytes.len() < Self::FIXED_SPAN_SIZE {
-            return Err(DecodeError::invalid_length(format!(
+            return Err(DecodeError::InvalidLength(format!(
                 "EnvChangeSpan::new() bytes.len()={} < FIXED_SPAN_SIZE={}",
                 bytes.len(),
                 Self::FIXED_SPAN_SIZE
@@ -107,7 +107,7 @@ impl<'a> EnvChangeSpan<'a> {
         let env_change = Self { bytes };
         // length gives the token body size only. bytes includes ty (u8) and length (u16).
         if env_change.length() as usize + 3 != bytes.len() {
-            return Err(DecodeError::invalid_length(format!(
+            return Err(DecodeError::InvalidLength(format!(
                 "EnvChangeSpan::new() length+3={} != bytes.len()={}",
                 env_change.length() as usize + 3,
                 bytes.len()
@@ -185,7 +185,7 @@ impl<'a> EnvChangeSpan<'a> {
             #[cfg(feature = "tds7.4")]
             Some(EnvChangeType::SendRoutingInformation)
             | Some(EnvChangeType::SendEnhancedRoutingInformation) => return Ok(r_u16_le(self.bytes, ib) as usize),
-            None => return Err(DecodeError::invalid_env_change_type(format!("unknown env change type byte: 0x{:02x}", self.bytes[3]))),
+            None => return Err(DecodeError::InvalidEnvChangeType(format!("unknown env change type byte: 0x{:02x}", self.bytes[3]))),
         };
         Ok(self.bytes[ib] as usize * multiplier)
     }

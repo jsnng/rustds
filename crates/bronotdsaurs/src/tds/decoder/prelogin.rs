@@ -16,26 +16,26 @@ impl<'a> Decode<'a> for PreLoginSpan<'a> {
             }
 
             #[cfg(feature = "unsafe")]
-            let offset = unsafe { opt.offset() }.ok_or(DecodeError::invalid_field(
+            let offset = unsafe { opt.offset() }.ok_or(DecodeError::InvalidField(
                 "PreLoginSpan populate() opt.offset is None".to_string(),
             ))? as usize;
             #[cfg(not(feature = "unsafe"))]
-            let offset = opt.offset().ok_or(DecodeError::invalid_field(
+            let offset = opt.offset().ok_or(DecodeError::InvalidField(
                 "PreLoginSpan populate() opt.offset is None".to_string(),
             ))? as usize;
             #[cfg(feature = "unsafe")]
-            let len = unsafe { opt.option_length() }.ok_or(DecodeError::invalid_field(
+            let len = unsafe { opt.option_length() }.ok_or(DecodeError::InvalidField(
                 "PreLoginSpan populate() opt.option_length is None".to_string(),
             ))? as usize;
             #[cfg(not(feature = "unsafe"))]
-            let len = opt.option_length().ok_or(DecodeError::invalid_field(
+            let len = opt.option_length().ok_or(DecodeError::InvalidField(
                 "PreLoginSpan populate() opt.option_length is None".to_string(),
             ))? as usize;
 
             let cursor = PreLoginHeader::LENGTH + offset;
 
             if buf.len() < offset + len {
-                return Err(DecodeError::unexpected_eof(format!(
+                return Err(DecodeError::UnexpectedEof(format!(
                     "PreLoginSpan populate() buf.len()={} < offset+len={}",
                     buf.len(),
                     offset + len
@@ -65,7 +65,7 @@ impl<'a> Decode<'a> for PreLoginSpan<'a> {
                 }
                 Some(PLOptionType::Terminator) => unreachable!(),
                 _ => {
-                    return Err(DecodeError::invalid_field(format!(
+                    return Err(DecodeError::InvalidField(format!(
                         "PreLoginSpan populate() unknown option token: {:?}",
                         token
                     )));
