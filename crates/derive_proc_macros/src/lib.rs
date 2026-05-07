@@ -87,7 +87,7 @@ fn derive_tryfrom_into_format_impl(ast: DeriveInput) -> TokenStream {
             type Error = DecodeError;
             #[inline]
             fn try_from(val: #ty) -> Result<Self, DecodeError> {
-                Self::from_u8(val).ok_or_else(|| DecodeError::invalid_field(format!("TryFrom<{}> unknown value: {:?}", stringify!(#ident), val)))
+                Self::from_u8(val).ok_or_else(|| DecodeError::InvalidField(format!("TryFrom<{}> unknown value: {:?}", stringify!(#ident), val)))
             }
         }
         #(#cfg_attrs)*

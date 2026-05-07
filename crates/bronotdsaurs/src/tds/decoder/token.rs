@@ -106,14 +106,14 @@ impl<'a> Decode<'a> for EnvChangeSpan<'a> {
         let ib_old_val = span.ib_old_value()?;
         let cch_old_val = span.cch_old_value()?;
         if buf.len() < ib_new_val + cch_new_val {
-            return Err(DecodeError::invalid_field(format!(
+            return Err(DecodeError::InvalidField(format!(
                 "EnvChangeSpan populate() buf.len()={} < ib_new_val+cch_new_val={}",
                 buf.len(),
                 ib_new_val + cch_new_val
             )));
         }
         if buf.len() < ib_old_val + cch_old_val {
-            return Err(DecodeError::invalid_field(format!(
+            return Err(DecodeError::InvalidField(format!(
                 "EnvChangeSpan populate() buf.len()={} < ib_old_val+cch_old_val={}",
                 buf.len(),
                 ib_old_val + cch_old_val

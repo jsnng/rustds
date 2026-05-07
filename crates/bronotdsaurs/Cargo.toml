@@ -27,7 +27,7 @@ dotenvy = "0.15.7"
 workspace = true
 
 [features]
-default = ["transport", "tds8.0", "rustls", "chrono"]
+default = ["transport", "tds7.4", "rustls", "chrono"]
 std = ["dep:tracing-subscriber"]
 smp = []
 "smp2.2" = ["smp"]

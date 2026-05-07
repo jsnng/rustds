@@ -32,7 +32,7 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<InitialState, T, 
         let length = span.header().length() as usize;
 
         if length < PreLoginHeader::LENGTH {
-            return Err(DecodeError::invalid_length(format!("PreLogin response: packet length {} less than header length {}", length, PreLoginHeader::LENGTH)).into());
+            return Err(DecodeError::InvalidLength(format!("PreLogin response: packet length {} less than header length {}", length, PreLoginHeader::LENGTH)).into());
         }
 
         let payload_length = length - PreLoginHeader::LENGTH;
@@ -130,7 +130,7 @@ impl<T: Transport, O: Observer<Event>> Session<InitialState, T, O> {
                 #[cfg(not(feature = "tls"))]
                 Err(SessionError::Unimplemented)
             }
-            _ => Err(DecodeError::invalid_field(format!("PreLogin response: unsupported encryption option: {:?}", encryption)).into()),
+            _ => Err(DecodeError::InvalidField(format!("PreLogin response: unsupported encryption option: {:?}", encryption)).into()),
         }
     }
 }

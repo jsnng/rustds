@@ -55,7 +55,7 @@ impl TryFrom<u8> for ErrorClass {
             22 => Ok(ErrorClass::DamagedTableOrIndex),
             23 => Ok(ErrorClass::DBIntegrityWarning),
             24 => Ok(ErrorClass::MediaFailure),
-            _ => Err(DecodeError::invalid_field(format!(
+            _ => Err(DecodeError::InvalidField(format!(
                 "ErrorClass: invalid value {}",
                 class
             ))),

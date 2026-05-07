@@ -1,5 +1,4 @@
 use alloc::string::String;
-use alloc::format;
 
 #[derive(Debug)]
 pub enum DecodeError {
@@ -11,44 +10,6 @@ pub enum DecodeError {
     InvalidData(String),
     InvalidDataTokenType(String),
     InvalidEnvChangeType(String),
-}
-
-impl DecodeError {
-    #[track_caller]
-    pub fn invalid_field(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidField(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn invalid_length(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidLength(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn invalid_packet_type(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidPacketType(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn unexpected_eof(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::UnexpectedEof(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn invalid_data(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidData(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn invalid_data_token_type(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidDataTokenType(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
-    #[track_caller]
-    pub fn invalid_env_change_type(err_msg: String) -> Self {
-        let loc = core::panic::Location::caller();
-        Self::InvalidEnvChangeType(format!("[{}:{}] {}", loc.file(), loc.line(), err_msg))
-    }
 }
 
 impl core::fmt::Display for DecodeError {
