@@ -33,7 +33,7 @@ impl<T: AsyncTransport, O: Observer<Event>> AsyncReceiver<T> for Session<LoginRe
         let buf = self.buffer.readable();
         let length = r_u16_be(buf, 2) as usize;
         if length < Login7Header::LENGTH {
-            return Err(SessionError::InvalidPacketType);
+            return Err(SessionError::InvalidPacketLength { got: length, expected: Login7Header::LENGTH });
         }
         let payload_length = length - Login7Header::LENGTH;
 

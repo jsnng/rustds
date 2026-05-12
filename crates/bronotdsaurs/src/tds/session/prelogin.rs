@@ -12,7 +12,7 @@ use tracing::debug;
 /// Implemented by [`InitialState`] for 7.x and [`PreLoginReadyState`] for 8.0
 pub trait PreLoginPhase {}
 #[cfg(not(feature = "tds8.0"))]
-impl PreLoginPhase for InitivalState {}
+impl PreLoginPhase for InitialState {}
 #[cfg(feature = "tds8.0")]
 impl PreLoginPhase for PreLoginReadyState {}
 

@@ -22,10 +22,26 @@ impl<E: core::fmt::Debug + core::fmt::Display> core::fmt::Debug for TransportErr
     }
 }
 
+pub struct HexDump {
+      pub bytes: [u8; 32],
+      pub length: usize,
+  }
+
 pub enum SessionError {
     DecodeError(DecodeError),
     EncodeError(EncodeError),
-    InvalidPacketType,
+    InvalidPacketType { got: u8 },
+    UnexpectedEndOfStream {
+        head: usize,
+        tail: usize,
+        eof: bool,
+        peek: Option<u8>,
+        hexdump: HexDump,
+    },
+    InvalidPacketLength {
+        got: usize,
+        expected: usize,
+    },
     LoginFailed,
     MappedError(String),
     PartialRead,
@@ -60,7 +76,10 @@ impl core::fmt::Display for SessionError {
         match self {
             Self::DecodeError(x) => write!(f, "Deserialisation error: {}", x),
             Self::EncodeError(x) => write!(f, "Serialisation error: {}", x),
-            Self::InvalidPacketType => write!(f, "Invalid packet type"),
+            Self::InvalidPacketType { got } => write!(f, "Invalid packet type: 0x{:02x}", got),
+            Self::InvalidPacketLength { expected, got } => write!(f, "Invalid packet length: {expected}, {got}"),
+            Self::UnexpectedEndOfStream { head, tail, eof, peek, hexdump } =>
+                write!(f, "UnexpectedEndOfStream: (head={head} tail={tail} eof={eof} peek={peek:02x?}) bytes={hexdump}"),
             Self::LoginFailed => write!(f, "Login failed"),
             Self::MappedError(msg) => write!(f, "{}", msg),
             Self::PartialRead => write!(f, "Partial read"),
@@ -77,6 +96,15 @@ impl core::fmt::Display for SessionError {
     }
 }
 
+impl core::fmt::Display for HexDump {                                                                            
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {                                     
+        for b in &self.bytes[..self.length] {                                                                    
+            write!(f, "{:02x} ", b)?;
+        }                                                                                                        
+        Ok(())                                                                                                 
+    }                                                                                                            
+}                                                                                                              
+       
 impl core::error::Error for SessionError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {

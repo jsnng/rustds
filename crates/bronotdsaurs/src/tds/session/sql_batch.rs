@@ -99,13 +99,15 @@ impl StreamingBuffer {
 
         let ty = header[0];
         if ty != SERVER_PACKET_TYPE {
-            return Err(SessionError::InvalidPacketType);
+            return Err(SessionError::InvalidPacketType { got: ty });
         }
+        
         let status = header[1];
         let length = u16::from_be_bytes([header[2], header[3]]) as usize;
         if length < LENGTH {
             return Err(SessionError::PartialRead);
         }
+
         let payload_length = length - LENGTH;
 
         let mut reading = 0;
@@ -356,7 +358,31 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
             len: buf.tail,
         });
 
-        let done_token = done_token.ok_or(SessionError::InvalidPacketType)?;
+        let done_token = done_token.ok_or_else(|| {
+        let peek = (buf.head < buf.tail)
+            .then(|| unsafe { *buf.bytes[buf.head].as_ptr() });
+            // let end = (buf.head + 32).min(buf.tail);
+            let hexdump = {                                                                                                  
+            let end = (buf.head + 32).min(buf.tail);                                                                   
+            let mut bytes = [0u8; 32];                                                                                   
+            let length = end - buf.head;
+                unsafe {                                                                                                     
+                    core::ptr::copy_nonoverlapping(                                                                        
+                        buf.bytes[buf.head].as_ptr(),                                                       
+                        bytes.as_mut_ptr(),                       
+                        length,                                                                                              
+                    );                                                                                                     
+                }                                                                                                            
+                HexDump { bytes, length }
+            };   
+            SessionError::UnexpectedEndOfStream {
+                head: buf.head,
+                tail: buf.tail,
+                eof: buf.eof,
+                peek,
+                hexdump,
+            }
+        })?;
         results.push(QueryResult {
             done_token,
             errors,
@@ -365,5 +391,5 @@ impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
 
         Ok(QueryResults { results })
     }
-    
+
 }
