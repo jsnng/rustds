@@ -2,6 +2,7 @@
 use crate::tds::prelude::*;
 
 #[derive(Debug, Clone, Builder)]
+#[builder(no_std)]
 pub struct ColInfoToken {
     ty: DataTokenType,
     length: u16,
@@ -9,6 +10,7 @@ pub struct ColInfoToken {
 }
 
 #[derive(Debug, Clone, Builder)]
+#[builder(no_std)]
 pub struct ColProperty {
     col_num: u8,
     table_num: u8,

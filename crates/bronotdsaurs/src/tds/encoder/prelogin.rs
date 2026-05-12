@@ -103,15 +103,13 @@ fn proof_opts_version_first_terminator_last() {
     assert_eq!(buf.readable()[cursor], PLOptionType::Terminator)
 }
 
-#[cfg(feature = "std")]
-#[cfg(test)]
+#[cfg(all(feature = "std", not(feature = "tds8.0"), test))]
 mod tests {
     extern crate std;
     use crate::tds::encoder::traits::MessageEncoder;
     use crate::tds::session::prelude::*;
     use crate::tds::types::prelude::*;
 
-    #[cfg(not(feature = "tds8.0"))]
     #[test]
     fn test_prelogin_encode() {
         let prelogin = PreLoginPacketBuilder::default().build().unwrap();

@@ -2,15 +2,17 @@ use derive_builder::Builder;
 
 #[derive(Debug, Default)]
 pub struct InitialState;
-#[cfg(not(feature = "tds8.0"))]
+#[cfg(all(not(feature = "tds8.0"), feature = "tls"))]
 #[derive(Debug, Default)]
 pub struct TlsSslNegotiationState;
-#[cfg(not(feature = "tds8.0"))]
+#[cfg(feature = "tds8.0")]
 #[derive(Debug, Default)]
 pub struct TlsNegotiationState;
 #[cfg(feature = "tds8.0")]
 #[derive(Debug, Default)]
 pub struct PreLoginReadyState;
+#[derive(Debug, Default)]
+pub struct MARS;
 #[derive(Debug, Default)]
 pub struct LoginReadyState;
 #[derive(Debug, Default)]

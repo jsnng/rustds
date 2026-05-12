@@ -1,3 +1,4 @@
+//! SQL Batch State Transitions
 use core::mem::MaybeUninit;
 
 use crate::tds::decoder::stream::{NoContextStep, TokenDecoder};
@@ -81,13 +82,14 @@ impl StreamingBuffer {
 
     /// Reads the next TDS packet from `stream`, strips its 8-byte header, and
     /// writes the payload directly into the buffer.
-    fn fill<T: Transport>(&mut self, stream: &mut T) -> Result<(), SessionError> {
+    async fn fill<T: AsyncTransport>(&mut self, stream: &mut T) -> Result<(), SessionError> {
         const LENGTH: usize = 8;
         let mut header = [0u8; LENGTH];
         let mut idx = 0;
         while idx < LENGTH {
             let n = stream
                 .read(&mut header[idx..])
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);
@@ -118,6 +120,7 @@ impl StreamingBuffer {
             };
             let n = stream
                 .read(dst)
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);
@@ -133,11 +136,12 @@ impl StreamingBuffer {
     }
 }
 
-impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
+impl<T: AsyncTransport, O: Observer<Event>> Session<LoggedInState, T, O> {
     #[inline]
-    fn send_and_receive<Msg, M, F>(
+    async fn send_and_receive<Msg, M, F>(
         mut self,
         msg: Msg,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -147,8 +151,8 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
-        self.send(msg)?;
-        let results = self.receive(on_col_metadata, on_row)?;
+        self.send(msg).await?;
+        let results = self.receive(attention, on_col_metadata, on_row).await?;
         let errors: Vec<ErrorInfoToken> = results.results.iter()
             .flat_map(|r| r.errors.iter().cloned())
             .collect();
@@ -166,9 +170,10 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
     }
 
     #[inline]
-    pub fn query<M, F>(
+    pub async fn query<M, F>(
         self,
         sql_batch: SQLBatch,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -176,13 +181,14 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
-        self.send_and_receive(sql_batch, on_col_metadata, on_row)
+        self.send_and_receive(sql_batch, attention, on_col_metadata, on_row).await
     }
 
     #[inline]
-    pub fn execute<M, F>(
+    pub async fn execute<M, F>(
         self,
         rpc: RPCReqBatch,
+        attention: Attention,
         on_col_metadata: M,
         on_row: F,
     ) -> Result<LoggedInStateTransition<T, O>, SessionError>
@@ -190,12 +196,12 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
     {
-        self.send_and_receive(rpc, on_col_metadata, on_row)
+        self.send_and_receive(rpc, attention, on_col_metadata, on_row).await
     }
 
     /// Decodes the TDS response stream, drains() row tokens when col_metadata is received via callbacks.
     #[inline]
-    pub fn receive<M, F>(&mut self, mut on_col_metadata: M, mut on_row: F) -> Result<QueryResults, SessionError>
+    pub async fn receive<M, F>(&mut self, attention: Attention, mut on_col_metadata: M, mut on_row: F) -> Result<QueryResults, SessionError>
     where
         M: FnMut(&ColMetaDataOwned),
         F: for<'r> FnMut(&ColMetaDataOwned, &'r [u8]),
@@ -243,21 +249,21 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
                         // incomplete row — need more data
                         if buf.eof { break 'outer; }
                         buf.compact();
-                        buf.fill(&mut self.stream)?;
+                        buf.fill(&mut self.stream).await?;
                         continue 'outer;
                     }
                     Some(b) if b >= 0xfd => {
                         // incomplete done token — need more data
                         if buf.eof { break 'outer; }
                         buf.compact();
-                        buf.fill(&mut self.stream)?;
+                        buf.fill(&mut self.stream).await?;
                         continue 'outer;
                     }
                     None => {
                         // buffer exhausted — need more data
                         if buf.eof { break 'outer; }
                         buf.compact();
-                        buf.fill(&mut self.stream)?;
+                        buf.fill(&mut self.stream).await?;
                         continue 'outer;
                     }
                     _ => {
@@ -338,7 +344,7 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
                         buf.head = head;
                         if buf.eof { break 'outer; }
                         buf.compact();
-                        buf.fill(&mut self.stream)?;
+                        buf.fill(&mut self.stream).await?;
                         continue 'outer;
                     }
                 }
@@ -359,4 +365,5 @@ impl<T: Transport, O: Observer<Event>> Session<LoggedInState, T, O> {
 
         Ok(QueryResults { results })
     }
+    
 }

@@ -1,15 +1,15 @@
+//! Login State Transitions
+use transport::AsyncTransport;
 use crate::tds::decoder::stream::{NoContextStep, TokenDecoder};
 use crate::tds::session::prelude::*;
 use crate::tds::prelude::*;
 
-impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<LoginReadyState, T, O> {
+impl<T: AsyncTransport, O: Observer<Event>> AsyncReceiver<T> for Session<LoginReadyState, T, O> {
     type Error = SessionError;
     type Output<'a>
-        = ()
-    where
-        Self: 'a;
+        =  &'a [u8] where Self: 'a;
 
-    fn receive(&mut self) -> Result<(), Self::Error> {
+    async fn receive(&mut self) -> Result<(), Self::Error> {
         self.buffer.reset();
         self.notify(Event::Log(alloc::format!(
             "[login::receive] reading header ({} bytes)",
@@ -21,6 +21,7 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<LoginReadyState, 
             let n = self
                 .stream
                 .read(&mut self.buffer.writeable()[head..Login7Header::LENGTH])
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             if n == 0 {
                 return Err(SessionError::ServerClosedTransportConnection);
@@ -42,6 +43,7 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<LoginReadyState, 
             let n = self
                 .stream
                 .read(&mut self.buffer.writeable()[reading..payload_length])
+                .await
                 .map_err(|_| SessionError::transport_read_error())?;
             self.notify(Event::Log(alloc::format!(
                 "[login::receive] payload read: n={n} (total={}/{payload_length})",
@@ -61,6 +63,10 @@ impl<T: Transport, O: Observer<Event>> Receiver<T> for Session<LoginReadyState, 
 
         Ok(())
     }
+
+    fn output(&self) -> Result<Self::Output<'_>, Self::Error> {
+        Ok(&self.buffer.readable()[Login7Header::LENGTH..])
+    }
 }
 
 pub enum LoginReadyStateTransition<T, O> {
@@ -73,14 +79,14 @@ pub enum LoginReadyStateTransition<T, O> {
     },
 }
 
-impl<T: Transport, O: Observer<Event>> Session<LoginReadyState, T, O> {
-    pub fn transition(
+impl<T: AsyncTransport, O: Observer<Event>> Session<LoginReadyState, T, O> {
+    pub async fn transition(
         mut self,
         login7: Login7Packet,
     ) -> Result<LoginReadyStateTransition<T, O>, SessionError> {
-        self.send(login7)?;
+        self.send(login7).await?;
         self.notify(Event::Login7Sent);
-        self.receive()?;
+        self.receive().await?;
 
         let readable = &self.buffer.readable()[Login7Header::LENGTH..];
         let mut errors: Vec<ErrorInfoToken> = Vec::with_capacity(4);

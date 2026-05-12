@@ -4,7 +4,7 @@ pub mod bulk_load;
 pub mod error;
 pub mod header;
 pub mod login;
-pub mod message;
+pub mod attention;
 pub mod prelogin;
 pub mod rpc;
 pub mod sql_batch;

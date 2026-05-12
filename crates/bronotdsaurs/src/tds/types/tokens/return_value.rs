@@ -16,6 +16,7 @@ pub struct ReturnValueSpan<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Builder)]
+#[builder(no_std)]
 pub struct ReturnValueToken {
     ty: u8,
     param_ordinal: u16,

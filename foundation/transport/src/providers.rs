@@ -6,14 +6,14 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 
 #[cfg(feature = "std")]
-impl Transport for TcpStream {
+impl AsyncTransport for TcpStream {
     type Error = std::io::Error;
 
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+    async fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         Read::read(self, buf)
     }
 
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+    async fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
         Write::write(self, buf)
     }
 

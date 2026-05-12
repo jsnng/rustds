@@ -24,9 +24,14 @@ pub struct SpExecute {
         builder
             .all_headers(all_headers)
             .name_len_proc_id(NameLenProcId::ProcID(ProcId::SpExecute))
-            .enclave_package(vec![])
             .parameter_data(parameters)
-            .option_flags(OptionFlags::default())
+            .option_flags(OptionFlags::default());
+
+        #[cfg(feature = "tds7.4")]
+        builder
+            .enclave_package(vec![]);
+
+        builder
             .build()
             .unwrap()
     }

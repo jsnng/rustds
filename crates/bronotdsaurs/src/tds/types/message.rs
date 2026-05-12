@@ -1,4 +1,6 @@
 use crate::tds::prelude::*;
+use core::sync::atomic::{AtomicU8, Ordering};
+use alloc::sync::Arc;
 
 /// All server responses use packet header type 0x04 (Tabular Result).
 /// See: [MS-TDS] 2.2.3.1.1
@@ -20,5 +22,21 @@ pub enum ClientMessageType {
 }
 
 tds_packet_header!(AttentionHeader, ClientMessageType::Attention);
-#[derive(Debug, Clone, Copy)]
-pub struct Attention;
+#[derive(Debug, Clone, Default)]    
+pub struct Attention(Arc<AtomicU8>);
+
+impl Attention {
+    const IDLE: u8  = 0;
+    const REQUESTED: u8 = 1;
+    const SENT: u8 = 2;
+    pub fn new() -> Self { Self::default() }
+    pub fn signal(&self) {
+        let _ = self.0.compare_exchange(Attention::IDLE,Attention::REQUESTED, Ordering::AcqRel, Ordering::Acquire);
+    }
+    pub(crate) fn take(&self) -> bool {
+        self.0.compare_exchange(Attention::REQUESTED,Attention::SENT, Ordering::AcqRel, Ordering::Acquire).is_ok()
+    }
+    pub(crate) fn sent(&self) -> bool {
+        self.0.load(Ordering::Acquire) == Attention::SENT
+    }
+}
